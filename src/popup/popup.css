@@ -1,0 +1,23 @@
+:root { --indigo: #4f46e5; --line: #e5e7eb; --muted: #6b7280; }
+* { box-sizing: border-box; }
+body { width: 340px; margin: 0; font: 13px/1.4 system-ui, sans-serif; color: #111; max-height: 560px; overflow-y: auto; }
+header, footer { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+footer { border-bottom: none; border-top: 1px solid var(--line); position: sticky; bottom: 0; background: #fff; }
+.domain { font-weight: 600; }
+.link { background: none; border: none; color: var(--indigo); cursor: pointer; font-size: 12px; }
+.list { padding: 6px 10px; border-bottom: 1px solid var(--line); }
+.list-head { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.list-head .name { font-weight: 600; flex: 1; }
+.list-head .count { color: var(--muted); font-size: 11px; }
+.list-head .del { color: var(--muted); }
+.item { display: flex; align-items: center; gap: 6px; padding: 3px 0 3px 4px; }
+.item input[type="checkbox"] { margin: 0; }
+.item .text { flex: 1; }
+.item.done .text { text-decoration: line-through; color: var(--muted); }
+.item a { text-decoration: none; }
+.add-row { display: flex; gap: 4px; padding: 4px 0; }
+.add-row input[type="text"] { flex: 1; padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px; }
+.add-row .pin { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 3px; }
+.empty { padding: 16px 10px; color: var(--muted); text-align: center; }
+h2 { font-size: 12px; margin: 8px 10px 2px; color: var(--muted); }
+button.del { background: none; border: none; cursor: pointer; }

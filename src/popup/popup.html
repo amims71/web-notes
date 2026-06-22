@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <span id="domain" class="domain"></span>
+      <button id="see-all" class="link" title="Open full app">⤢ all</button>
+    </header>
+    <main id="lists"></main>
+    <section id="page-section" hidden>
+      <h2 id="page-heading">★ This page</h2>
+      <div id="page-items"></div>
+    </section>
+    <footer>
+      <button id="new-list" class="link">+ new list</button>
+      <label class="widget-toggle"><input type="checkbox" id="widget-toggle" /> widget</label>
+    </footer>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
