@@ -28,10 +28,10 @@ chrome.tabs.onActivated.addListener(async ({ tabId }) => {
   await updateBadgeForTab(tab);
 });
 
-chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
-  if (info.status === "complete" || info.url) updateBadgeForTab(tab);
+chrome.tabs.onUpdated.addListener(async (tabId, info, tab) => {
+  if (info.status === "complete" || info.url) await updateBadgeForTab(tab);
 });
 
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === "local") refreshActiveTab();
+chrome.storage.onChanged.addListener(async (changes, area) => {
+  if (area === "local") await refreshActiveTab();
 });
