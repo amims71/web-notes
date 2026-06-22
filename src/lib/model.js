@@ -45,3 +45,60 @@ export function validateBucket(b) {
       l.items.every((it) => it && typeof it.id === "string" && typeof it.text === "string" && typeof it.done === "boolean"),
   );
 }
+
+export function countOpenItems(bucket, { pageUrl } = {}) {
+  if (!bucket || !Array.isArray(bucket.lists)) return 0;
+  let n = 0;
+  for (const list of bucket.lists)
+    for (const it of list.items)
+      if (!it.done && (it.pageUrl === null || it.pageUrl === pageUrl)) n++;
+  return n;
+}
+
+export function serializeStore({ domains, settings }) {
+  return { schemaVersion: SCHEMA_VERSION, domains: domains ?? {}, settings: settings ?? {} };
+}
+
+export function parseBackup(jsonString) {
+  let data;
+  try {
+    data = JSON.parse(jsonString);
+  } catch {
+    throw new Error("Backup is not valid JSON.");
+  }
+  if (!data || data.schemaVersion !== SCHEMA_VERSION) throw new Error("Unsupported or missing schema version.");
+  if (!data.domains || typeof data.domains !== "object") throw new Error("Backup has no domains object.");
+  for (const [key, bucket] of Object.entries(data.domains))
+    if (!validateBucket(bucket)) throw new Error(`Invalid bucket for ${key}.`);
+  return { schemaVersion: data.schemaVersion, domains: data.domains, settings: data.settings ?? {} };
+}
+
+function mergeItems(curItems, incItems) {
+  const byId = new Map(curItems.map((it) => [it.id, it]));
+  for (const inc of incItems) {
+    const cur = byId.get(inc.id);
+    if (!cur) byId.set(inc.id, inc);
+    else if ((inc.updatedAt ?? 0) > (cur.updatedAt ?? 0)) byId.set(inc.id, inc);
+  }
+  return [...byId.values()];
+}
+
+export function mergeStores(current, incoming) {
+  const out = {};
+  for (const [key, bucket] of Object.entries(current)) out[key] = bucket;
+  for (const [key, inc] of Object.entries(incoming)) {
+    const cur = out[key];
+    if (!cur) {
+      out[key] = inc;
+      continue;
+    }
+    const listsById = new Map(cur.lists.map((l) => [l.id, l]));
+    for (const incList of inc.lists) {
+      const curList = listsById.get(incList.id);
+      if (!curList) listsById.set(incList.id, incList);
+      else curList.items = mergeItems(curList.items, incList.items);
+    }
+    out[key] = { ...cur, lists: [...listsById.values()] };
+  }
+  return out;
+}
