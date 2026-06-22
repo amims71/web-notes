@@ -1,5 +1,5 @@
 import { getAllDomains, setDomain, removeDomain, subscribe } from "../lib/storage.js";
-import { serializeStore, parseBackup, mergeStores } from "../lib/model.js";
+import { serializeStore, parseBackup, mergeStores, isHttpUrl } from "../lib/model.js";
 
 export const state = { domains: {}, filter: "all", selected: new Set(), search: "", hideDone: false };
 
@@ -25,6 +25,7 @@ function matches(item) {
   return true;
 }
 
+// Global-view total: all open items for the domain (the toolbar badge is page-contextual and may differ).
 function openCount(bucket) {
   return bucket.lists.reduce((n, l) => n + l.items.filter((i) => !i.done).length, 0);
 }
@@ -96,7 +97,7 @@ function renderItem(key, list, item) {
 
   const row = el("div", { className: "item" + (item.done ? " done" : ""), draggable: true }, [cb, t]);
   if (item.pageUrl) row.append(el("span", { className: "pin", textContent: "★ " + item.pageUrl }));
-  if (item.url) row.append(el("a", { href: item.url, target: "_blank", textContent: "🔗" }));
+  if (isHttpUrl(item.url)) row.append(el("a", { href: item.url, target: "_blank", textContent: "🔗" }));
   const del = el("button", { className: "btn", textContent: "✕" });
   del.onclick = async () => { list.items = list.items.filter((x) => x !== item); await setDomain(key, b); };
   row.append(del);

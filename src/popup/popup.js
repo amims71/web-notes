@@ -1,5 +1,5 @@
 import { resolveScope } from "../lib/scope.js";
-import { makeDomainBucket, makeList, makeItem, nextOrder } from "../lib/model.js";
+import { makeDomainBucket, makeList, makeItem, nextOrder, isHttpUrl } from "../lib/model.js";
 import { getDomain, setDomain, subscribe } from "../lib/storage.js";
 
 let scope = null;
@@ -43,7 +43,7 @@ function itemRow(list, item) {
   text.title = "Double-click to edit";
   text.ondblclick = () => editItem(text, item);
   const row = el("div", { className: "item" + (item.done ? " done" : "") }, [cb, text]);
-  if (item.url) {
+  if (isHttpUrl(item.url)) {
     const a = el("a", { href: item.url, target: "_blank", textContent: "🔗", title: item.url });
     row.append(a);
   }

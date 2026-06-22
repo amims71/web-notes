@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { makeItem, makeList, makeDomainBucket, defaultMeta, validateBucket, nextOrder, SCHEMA_VERSION } from "../src/lib/model.js";
+import { makeItem, makeList, makeDomainBucket, defaultMeta, validateBucket, nextOrder, SCHEMA_VERSION, isHttpUrl } from "../src/lib/model.js";
 
 const opts = { id: "fixed-id", now: 1000 };
 
@@ -43,4 +43,27 @@ test("validateBucket accepts a valid bucket and rejects junk", () => {
   assert.equal(validateBucket(null), false);
   assert.equal(validateBucket({ domain: "a.com" }), false);
   assert.equal(validateBucket({ domain: "a.com", widgetEnabled: true, lists: "no" }), false);
+});
+
+test("isHttpUrl accepts http/https and rejects everything else", () => {
+  assert.equal(isHttpUrl("https://a.com"), true);
+  assert.equal(isHttpUrl("http://a.com/x"), true);
+  assert.equal(isHttpUrl("javascript:alert(1)"), false);
+  assert.equal(isHttpUrl("ftp://a.com"), false);
+  assert.equal(isHttpUrl(null), false);
+  assert.equal(isHttpUrl(""), false);
+});
+
+test("validateBucket rejects non-string pageUrl or url on items", () => {
+  const bad = makeDomainBucket("a.com");
+  const l = makeList("L", { id: "l1" });
+  l.items.push({ ...makeItem({ text: "t" }, { id: "i1", now: 1 }), pageUrl: 123 });
+  bad.lists.push(l);
+  assert.equal(validateBucket(bad), false);
+
+  const bad2 = makeDomainBucket("a.com");
+  const l2 = makeList("L", { id: "l2" });
+  l2.items.push({ ...makeItem({ text: "t" }, { id: "i2", now: 1 }), url: 5 });
+  bad2.lists.push(l2);
+  assert.equal(validateBucket(bad2), false);
 });

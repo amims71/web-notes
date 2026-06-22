@@ -34,6 +34,10 @@ export function nextOrder(arr) {
   return arr.length ? Math.max(...arr.map((x) => x.order ?? 0)) + 1 : 0;
 }
 
+export function isHttpUrl(u) {
+  return typeof u === "string" && /^https?:\/\//i.test(u);
+}
+
 export function validateBucket(b) {
   if (!b || typeof b !== "object") return false;
   if (typeof b.domain !== "string") return false;
@@ -42,7 +46,10 @@ export function validateBucket(b) {
   return b.lists.every(
     (l) =>
       l && typeof l.id === "string" && typeof l.name === "string" && Array.isArray(l.items) &&
-      l.items.every((it) => it && typeof it.id === "string" && typeof it.text === "string" && typeof it.done === "boolean"),
+      l.items.every((it) =>
+        it && typeof it.id === "string" && typeof it.text === "string" && typeof it.done === "boolean" &&
+        (it.pageUrl === null || typeof it.pageUrl === "string") &&
+        (it.url === null || typeof it.url === "string")),
   );
 }
 
