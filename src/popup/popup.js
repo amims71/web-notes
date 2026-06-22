@@ -99,7 +99,6 @@ function render() {
       e.stopPropagation();
       if (list.items.length && !confirm(`Delete list "${list.name}" and its ${list.items.length} item(s)?`)) return;
       bucket.lists = bucket.lists.filter((l) => l !== list);
-      if (!bucket.lists.length) { await save(); return; }
       await save();
     };
     const head = el("div", { className: "list-head" }, [name, count, del]);
