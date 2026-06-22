@@ -96,7 +96,7 @@ export function mergeStores(current, incoming) {
     for (const incList of inc.lists) {
       const curList = listsById.get(incList.id);
       if (!curList) listsById.set(incList.id, incList);
-      else curList.items = mergeItems(curList.items, incList.items);
+      else listsById.set(incList.id, { ...curList, items: mergeItems(curList.items, incList.items) });
     }
     out[key] = { ...cur, lists: [...listsById.values()] };
   }

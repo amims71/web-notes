@@ -52,3 +52,31 @@ test("mergeStores unions and resolves item conflicts by updatedAt", () => {
   assert.ok(items.find((x) => x.id === "i2"));
   assert.equal(items.length, 2);
 });
+
+test("mergeStores does not mutate its inputs", () => {
+  const cur = { "d:a.com": makeDomainBucket("a.com") };
+  cur["d:a.com"].lists = [makeList("L", { id: "l1" })];
+  cur["d:a.com"].lists[0].items = [{ ...makeItem({ text: "old" }, { id: "i1", now: 1 }), updatedAt: 1 }];
+  const snapshot = JSON.parse(JSON.stringify(cur));
+  const inc = { "d:a.com": makeDomainBucket("a.com") };
+  inc["d:a.com"].lists = [makeList("L", { id: "l1" })];
+  inc["d:a.com"].lists[0].items = [{ ...makeItem({ text: "new" }, { id: "i1", now: 2 }), updatedAt: 2 }];
+  mergeStores(cur, inc);
+  assert.deepEqual(cur, snapshot);
+});
+
+test("mergeStores keeps widgetEnabled and list metadata from current", () => {
+  const cur = { "d:a.com": { ...makeDomainBucket("a.com"), widgetEnabled: false } };
+  const curList = { ...makeList("Current Name", { id: "l1" }), collapsed: true, order: 7, items: [] };
+  cur["d:a.com"].lists = [curList];
+  const inc = { "d:a.com": { ...makeDomainBucket("a.com"), widgetEnabled: true } };
+  const incList = { ...makeList("Incoming Name", { id: "l1" }), collapsed: false, order: 0, items: [makeItem({ text: "added" }, { id: "i9", now: 5 })] };
+  inc["d:a.com"].lists = [incList];
+  const merged = mergeStores(cur, inc);
+  assert.equal(merged["d:a.com"].widgetEnabled, false);
+  const ml = merged["d:a.com"].lists.find((l) => l.id === "l1");
+  assert.equal(ml.name, "Current Name");
+  assert.equal(ml.collapsed, true);
+  assert.equal(ml.order, 7);
+  assert.ok(ml.items.find((x) => x.id === "i9"));
+});
