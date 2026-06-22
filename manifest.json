@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Web Notes",
+  "version": "0.1.0",
+  "description": "Per-domain notes, todos, and lists, stored locally.",
+  "permissions": ["storage", "unlimitedStorage", "tabs"],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_icon": { "16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png", "128": "icons/128.png" }
+  },
+  "icons": { "16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png", "128": "icons/128.png" },
+  "background": { "service_worker": "src/background.js", "type": "module" },
+  "content_scripts": [
+    { "matches": ["<all_urls>"], "js": ["src/content/widget.js"], "run_at": "document_idle" }
+  ],
+  "web_accessible_resources": [
+    { "resources": ["src/lib/scope.js", "src/lib/model.js", "src/lib/storage.js", "src/content/widget.css"], "matches": ["<all_urls>"] }
+  ]
+}
