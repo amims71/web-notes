@@ -35,3 +35,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, info, tab) => {
 chrome.storage.onChanged.addListener(async (changes, area) => {
   if (area === "local") await refreshActiveTab();
 });
+
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg?.type === "open-app") chrome.tabs.create({ url: chrome.runtime.getURL("src/app/app.html") });
+});
