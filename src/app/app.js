@@ -5,7 +5,9 @@ export const state = { domains: {}, filter: "all", selected: new Set(), search: 
 const $ = (id) => document.getElementById(id);
 
 function el(tag, props = {}, children = []) {
-  const n = Object.assign(document.createElement(tag), props);
+  const { dataset, ...rest } = props;
+  const n = Object.assign(document.createElement(tag), rest);
+  if (dataset) Object.assign(n.dataset, dataset);
   for (const c of children) n.append(c);
   return n;
 }
