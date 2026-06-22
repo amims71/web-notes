@@ -103,6 +103,8 @@ A domain bucket:
 ```
 
 `meta.schemaVersion` enables future migrations. IDs use `crypto.randomUUID()`.
+`meta.settings` is a reserved object for future global settings (none required for
+v1; per-domain widget visibility lives on the domain bucket, not here).
 
 ### Scope resolution
 
