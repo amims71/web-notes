@@ -119,11 +119,18 @@
       const up = () => {
         node.removeEventListener("pointermove", move);
         node.removeEventListener("pointerup", up);
+        node.removeEventListener("pointercancel", cancel);
         if (moved) node.onclick = (ev) => ev.stopPropagation();
         else { expanded = true; render(); }
       };
+      const cancel = () => {
+        node.removeEventListener("pointermove", move);
+        node.removeEventListener("pointerup", up);
+        node.removeEventListener("pointercancel", cancel);
+      };
       node.addEventListener("pointermove", move);
       node.addEventListener("pointerup", up);
+      node.addEventListener("pointercancel", cancel);
     });
   }
 
