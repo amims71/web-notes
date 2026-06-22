@@ -1,4 +1,5 @@
-import { getAllDomains, subscribe } from "../lib/storage.js";
+import { getAllDomains, setDomain, removeDomain, subscribe } from "../lib/storage.js";
+import { serializeStore, parseBackup, mergeStores } from "../lib/model.js";
 
 export const state = { domains: {}, filter: "all", selected: new Set(), search: "", hideDone: false };
 
@@ -78,13 +79,46 @@ function renderTree() {
   if (!shown) tree.append(el("div", { className: "empty", textContent: "Nothing here yet." }));
 }
 
-// Overridden in Task 10 to add editing/drag. Read-only version here.
 function renderItem(key, list, item) {
-  const cb = el("input", { type: "checkbox", checked: item.done, disabled: true });
+  const b = state.domains[key];
+  const cb = el("input", { type: "checkbox", checked: item.done });
+  cb.onchange = async () => { item.done = cb.checked; item.updatedAt = Date.now(); await setDomain(key, b); };
+
   const t = el("span", { className: "t", textContent: item.text });
-  const row = el("div", { className: "item" + (item.done ? " done" : "") }, [cb, t]);
+  t.title = "Double-click to edit";
+  t.ondblclick = () => {
+    const input = el("input", { type: "text", value: item.text });
+    input.onkeydown = (e) => { if (e.key === "Enter") input.blur(); };
+    input.onblur = async () => { item.text = input.value.trim() || item.text; item.updatedAt = Date.now(); await setDomain(key, b); };
+    t.replaceWith(input);
+    input.focus();
+  };
+
+  const row = el("div", { className: "item" + (item.done ? " done" : ""), draggable: true }, [cb, t]);
   if (item.pageUrl) row.append(el("span", { className: "pin", textContent: "★ " + item.pageUrl }));
   if (item.url) row.append(el("a", { href: item.url, target: "_blank", textContent: "🔗" }));
+  const del = el("button", { className: "btn", textContent: "✕" });
+  del.onclick = async () => { list.items = list.items.filter((x) => x !== item); await setDomain(key, b); };
+  row.append(del);
+
+  row.ondragstart = (e) => { e.dataTransfer.setData("text/plain", JSON.stringify({ key, list: list.id, item: item.id })); row.classList.add("dragging"); };
+  row.ondragend = () => row.classList.remove("dragging");
+  row.ondragover = (e) => { e.preventDefault(); row.classList.add("drag-over"); };
+  row.ondragleave = () => row.classList.remove("drag-over");
+  row.ondrop = async (e) => {
+    e.preventDefault();
+    row.classList.remove("drag-over");
+    const src = JSON.parse(e.dataTransfer.getData("text/plain"));
+    if (src.list !== list.id || src.key !== key) return; // reorder within a list only
+    const arr = list.items;
+    const from = arr.findIndex((x) => x.id === src.item);
+    const to = arr.findIndex((x) => x.id === item.id);
+    if (from < 0 || to < 0 || from === to) return;
+    const [moved] = arr.splice(from, 1);
+    arr.splice(to, 0, moved);
+    arr.forEach((x, i) => (x.order = i));
+    await setDomain(key, b);
+  };
   return row;
 }
 
@@ -104,5 +138,36 @@ $("hide-done").onchange = (e) => { state.hideDone = e.target.checked; renderTree
 subscribe(reload);
 reload();
 
-// Re-exported so Task 10 can extend rendering.
-export { el, renderItem };
+function getSettingsAndExport() {
+  const out = serializeStore({ domains: state.domains, settings: {} });
+  out.exportedAt = new Date().toISOString();
+  return JSON.stringify(out, null, 2);
+}
+
+$("export").onclick = () => {
+  const blob = new Blob([getSettingsAndExport()], { type: "application/json" });
+  const a = el("a", { href: URL.createObjectURL(blob), download: `web-notes-backup-${new Date().toISOString().slice(0, 10)}.json` });
+  document.body.append(a);
+  a.click();
+  a.remove();
+};
+
+$("import").onclick = () => $("import-file").click();
+$("import-file").onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  let parsed;
+  try {
+    parsed = parseBackup(await file.text());
+  } catch (err) {
+    alert("Import failed: " + err.message);
+    e.target.value = "";
+    return;
+  }
+  const replace = confirm("OK = REPLACE all current data with the backup.\nCancel = MERGE the backup into current data.");
+  const next = replace ? parsed.domains : mergeStores(state.domains, parsed.domains);
+  if (replace) for (const key of Object.keys(state.domains)) if (!next[key]) await removeDomain(key);
+  for (const [key, bucket] of Object.entries(next)) await setDomain(key, bucket);
+  e.target.value = "";
+  await reload();
+};
