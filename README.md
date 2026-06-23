@@ -37,6 +37,9 @@ belongs.
   read-friendly **Markdown export**. An optional **backup reminder** (off / daily /
   weekly) nudges you to export. Cross-device "sync" is file-based: export here, then
   **Import → Merge** on another device (`mergeStores`, newer-item-wins).
+- **Dark mode & polish** — follows your OS theme with a manual **Auto / Light /
+  Dark** toggle; **undo** after deleting an item; collapsed lists and the widget's
+  position are remembered.
 - **Local-only** — everything lives in `chrome.storage.local`; all surfaces stay
   in sync via `chrome.storage.onChanged`. No account, no backend, no cloud.
 
