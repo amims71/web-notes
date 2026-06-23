@@ -52,7 +52,13 @@
     if (!expanded) {
       const bubble = document.createElement("div");
       bubble.className = "bubble";
-      bubble.textContent = `📝 ${count}`;
+      const img = document.createElement("img");
+      img.src = base("icons/32.png");
+      img.alt = "Web Notes";
+      const badge = document.createElement("span");
+      badge.className = "count";
+      badge.textContent = String(count);
+      bubble.append(img, badge);
       bubble.onclick = () => { expanded = true; render(); };
       makeDraggable(bubble);
       container.append(bubble);
@@ -129,7 +135,7 @@
     const more = document.createElement("a");
     more.className = "more";
     more.textContent = "Open full app ⤢";
-    more.onclick = () => chrome.runtime.sendMessage({ type: "open-app" });
+    more.onclick = () => window.open(base("src/app/app.html"), "_blank");
     panel.append(more);
 
     container.append(panel);

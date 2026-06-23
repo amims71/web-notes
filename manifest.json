@@ -25,6 +25,6 @@
     { "matches": ["<all_urls>"], "js": ["src/content/widget.js"], "run_at": "document_idle" }
   ],
   "web_accessible_resources": [
-    { "resources": ["src/lib/scope.js", "src/lib/model.js", "src/lib/storage.js", "src/content/widget.css"], "matches": ["<all_urls>"] }
+    { "resources": ["src/lib/scope.js", "src/lib/model.js", "src/lib/storage.js", "src/content/widget.css", "src/app/app.html", "icons/32.png"], "matches": ["<all_urls>"] }
   ]
 }
