@@ -34,3 +34,6 @@ header .spacer { flex: 1; }
 .list-block.dragging { opacity: .5; }
 .list-block.drag-over { outline: 2px dashed var(--indigo); outline-offset: 2px; }
 .list-block > h3[draggable="true"] { cursor: grab; }
+.due-flag { font-size: 12px; color: var(--muted); }
+.due-flag.overdue { color: #dc2626; font-weight: 600; }
+.due-input, .remind-input, .repeat-input { padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; font: inherit; }
