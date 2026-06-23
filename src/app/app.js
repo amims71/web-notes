@@ -1,7 +1,8 @@
 import { getAllDomains, setDomain, removeDomain, subscribe } from "../lib/storage.js";
-import { serializeStore, parseBackup, mergeStores, isHttpUrl } from "../lib/model.js";
+import { serializeStore, parseBackup, mergeStores, isHttpUrl, moveItem, reorderLists } from "../lib/model.js";
 
 export const state = { domains: {}, filter: "all", selected: new Set(), search: "", hideDone: false };
+const expanded = new Set();
 
 const $ = (id) => document.getElementById(id);
 
@@ -69,15 +70,58 @@ function renderTree() {
       if (!items.length) continue;
       blockHas = true;
       const done = list.items.filter((i) => i.done).length;
-      const lb = el("div", { className: "list-block", dataset: { key, list: list.id } }, [
-        el("h3", {}, [el("span", { textContent: list.name }), el("span", { className: "count", textContent: `${done}/${list.items.length}` })]),
+      const header = el("h3", { draggable: true }, [
+        el("span", { textContent: list.name }),
+        el("span", { className: "count", textContent: `${done}/${list.items.length}` }),
       ]);
+      const lb = el("div", { className: "list-block", dataset: { key, list: list.id } }, [header]);
+      header.ondragstart = (e) => {
+        e.dataTransfer.setData("text/plain", JSON.stringify({ type: "list", key, list: list.id }));
+        lb.classList.add("dragging");
+      };
+      header.ondragend = () => lb.classList.remove("dragging");
+      lb.ondragover = (e) => { e.preventDefault(); lb.classList.add("drag-over"); };
+      lb.ondragleave = () => lb.classList.remove("drag-over");
+      lb.ondrop = async (e) => {
+        e.preventDefault();
+        lb.classList.remove("drag-over");
+        const src = JSON.parse(e.dataTransfer.getData("text/plain"));
+        if (src.key !== key) return; // same domain only
+        if (src.type === "item") {
+          await setDomain(key, moveItem(b, src.list, list.id, src.item, b.lists.find((l) => l.id === list.id).items.length));
+        } else if (src.type === "list" && src.list !== list.id) {
+          const ids = [...b.lists].sort((a, c) => a.order - c.order).map((l) => l.id).filter((id) => id !== src.list);
+          ids.splice(ids.indexOf(list.id), 0, src.list);
+          await setDomain(key, reorderLists(b, ids));
+        }
+      };
       for (const item of items) lb.append(renderItem(key, list, item));
       block.append(lb);
     }
     if (blockHas) { tree.append(block); shown++; }
   }
   if (!shown) tree.append(el("div", { className: "empty", textContent: "Nothing here yet." }));
+}
+
+function detailsPanel(key, item) {
+  const b = state.domains[key];
+  const panel = el("div", { className: "details" });
+  panel.hidden = !expanded.has(item.id);
+
+  const link = el("input", { type: "text", className: "link-input", value: item.url ?? "", placeholder: "https://…" });
+  link.oninput = () => { item.url = link.value.trim() || null; };
+  link.onchange = async () => { item.url = link.value.trim() || null; item.updatedAt = Date.now(); await setDomain(key, b); };
+  const clearLink = el("button", { className: "btn", textContent: "✕", title: "Clear link" });
+  clearLink.onclick = async () => { item.url = null; item.updatedAt = Date.now(); await setDomain(key, b); };
+  const linkRow = el("div", { className: "detail-row" }, [el("span", { className: "detail-label", textContent: "Link" }), link, clearLink]);
+
+  const note = el("textarea", { className: "note-input", value: item.note ?? "", placeholder: "Notes…", rows: 2 });
+  note.oninput = () => { item.note = note.value.trim() || null; };
+  note.onchange = async () => { item.note = note.value.trim() || null; item.updatedAt = Date.now(); await setDomain(key, b); };
+  const noteRow = el("div", { className: "detail-row" }, [el("span", { className: "detail-label", textContent: "Notes" }), note]);
+
+  panel.append(linkRow, noteRow);
+  return panel;
 }
 
 function renderItem(key, list, item) {
@@ -98,11 +142,27 @@ function renderItem(key, list, item) {
   const row = el("div", { className: "item" + (item.done ? " done" : ""), draggable: true }, [cb, t]);
   if (item.pageUrl) row.append(el("span", { className: "pin", textContent: "★ " + item.pageUrl }));
   if (isHttpUrl(item.url)) row.append(el("a", { href: item.url, target: "_blank", textContent: "🔗" }));
+  if (item.note) row.append(el("span", { className: "has-note", textContent: "📝", title: "Has notes" }));
+
+  const panel = detailsPanel(key, item);
+  const toggle = el("button", { className: "btn", textContent: expanded.has(item.id) ? "▾" : "▸", title: "Details" });
+  toggle.onclick = () => {
+    const open = !expanded.has(item.id);
+    open ? expanded.add(item.id) : expanded.delete(item.id);
+    panel.hidden = !open;
+    toggle.textContent = open ? "▾" : "▸";
+  };
+  row.append(toggle);
+
   const del = el("button", { className: "btn", textContent: "✕" });
-  del.onclick = async () => { list.items = list.items.filter((x) => x !== item); await setDomain(key, b); };
+  del.onclick = async () => { list.items = list.items.filter((x) => x !== item); expanded.delete(item.id); await setDomain(key, b); };
   row.append(del);
 
-  row.ondragstart = (e) => { e.dataTransfer.setData("text/plain", JSON.stringify({ key, list: list.id, item: item.id })); row.classList.add("dragging"); };
+  row.ondragstart = (e) => {
+    e.stopPropagation();
+    e.dataTransfer.setData("text/plain", JSON.stringify({ type: "item", key, list: list.id, item: item.id }));
+    row.classList.add("dragging");
+  };
   row.ondragend = () => row.classList.remove("dragging");
   row.ondragover = (e) => { e.preventDefault(); row.classList.add("drag-over"); };
   row.ondragleave = () => row.classList.remove("drag-over");
@@ -110,17 +170,13 @@ function renderItem(key, list, item) {
     e.preventDefault();
     row.classList.remove("drag-over");
     const src = JSON.parse(e.dataTransfer.getData("text/plain"));
-    if (src.list !== list.id || src.key !== key) return; // reorder within a list only
-    const arr = list.items;
-    const from = arr.findIndex((x) => x.id === src.item);
-    const to = arr.findIndex((x) => x.id === item.id);
-    if (from < 0 || to < 0 || from === to) return;
-    const [moved] = arr.splice(from, 1);
-    arr.splice(to, 0, moved);
-    arr.forEach((x, i) => (x.order = i));
-    await setDomain(key, b);
+    if (src.type !== "item" || src.key !== key) return; // items only, same domain only
+    e.stopPropagation();
+    const destIndex = list.items.findIndex((x) => x.id === item.id);
+    await setDomain(key, moveItem(b, src.list, list.id, src.item, destIndex));
   };
-  return row;
+
+  return el("div", { className: "item-wrap" }, [row, panel]);
 }
 
 export function render() {

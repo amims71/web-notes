@@ -25,3 +25,13 @@ header .spacer { flex: 1; }
 .empty { color: var(--muted); padding: 40px; text-align: center; }
 .dragging { opacity: .4; }
 .drag-over { border-top: 2px solid var(--indigo); }
+.has-note { font-size: 12px; }
+.item-wrap { }
+.details { padding: 4px 0 8px 28px; }
+.detail-row { display: flex; align-items: flex-start; gap: 8px; margin: 4px 0; }
+.detail-label { width: 42px; color: var(--muted); font-size: 12px; padding-top: 5px; }
+.link-input { flex: 1; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; font: inherit; }
+.note-input { flex: 1; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; font: inherit; resize: vertical; }
+.list-block.dragging { opacity: .5; }
+.list-block.drag-over { outline: 2px dashed var(--indigo); outline-offset: 2px; }
+.list-block > h3[draggable="true"] { cursor: grab; }
