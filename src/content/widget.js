@@ -31,6 +31,11 @@
     Object.assign(container.style, { right: corner.right, bottom: corner.bottom, left: "auto", top: "auto" });
   }
 
+  function applyTheme(t) {
+    if (t === "light" || t === "dark") host.dataset.theme = t;
+    else delete host.dataset.theme;
+  }
+
   function openItems() {
     const out = [];
     for (const l of bucket?.lists ?? [])
@@ -174,9 +179,15 @@
     });
   }
 
-  async function reload() { bucket = await getDomain(scope.key); render(); }
+  async function reload() {
+    bucket = await getDomain(scope.key);
+    const m = await getMeta();
+    applyTheme(m.settings?.theme);
+    render();
+  }
   const savedMeta = await getMeta();
   if (savedMeta.settings?.widgetCorner) corner = savedMeta.settings.widgetCorner;
+  applyTheme(savedMeta.settings?.theme);
   subscribe(reload);
   await reload();
 })();

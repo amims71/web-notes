@@ -7,6 +7,11 @@ const expanded = new Set();
 
 const $ = (id) => document.getElementById(id);
 
+function applyTheme(t) {
+  if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+  else delete document.documentElement.dataset.theme;
+}
+
 function el(tag, props = {}, children = []) {
   const { dataset, ...rest } = props;
   const n = Object.assign(document.createElement(tag), rest);
@@ -291,6 +296,8 @@ export async function reload() {
   state.domains = await getAllDomains();
   meta = await getMeta();
   $("backup").value = meta.settings?.backupReminder ?? "off";
+  applyTheme(meta.settings?.theme);
+  $("theme").value = meta.settings?.theme ?? "auto";
   render();
 }
 
@@ -337,4 +344,11 @@ $("backup").onchange = async (e) => {
   meta.settings.backupReminder = e.target.value;
   if (e.target.value !== "off") meta.settings.lastBackupReminderAt = Date.now();
   await setMeta(meta);
+};
+
+$("theme").onchange = async (e) => {
+  meta.settings = meta.settings ?? {};
+  meta.settings.theme = e.target.value;
+  await setMeta(meta);
+  applyTheme(e.target.value);
 };

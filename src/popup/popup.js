@@ -1,6 +1,6 @@
 import { resolveScope } from "../lib/scope.js";
 import { makeDomainBucket, makeList, makeItem, nextOrder, isHttpUrl, dueState } from "../lib/model.js";
-import { getDomain, setDomain, subscribe } from "../lib/storage.js";
+import { getDomain, setDomain, subscribe, getMeta, setMeta } from "../lib/storage.js";
 
 let scope = null;
 let bucket = null;
@@ -9,7 +9,15 @@ let pendingEditId = null;
 
 const $ = (id) => document.getElementById(id);
 
+function applyTheme(t) {
+  if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+  else delete document.documentElement.dataset.theme;
+}
+
 async function load() {
+  const meta = await getMeta();
+  applyTheme(meta.settings?.theme);
+  $("theme").value = meta.settings?.theme ?? "auto";
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   scope = resolveScope(tab?.url ?? "");
   if (scope.kind !== "web") {
@@ -242,6 +250,14 @@ $("new-list").onclick = async () => {
 $("widget-toggle").onchange = async (e) => {
   bucket.widgetEnabled = e.target.checked;
   await save();
+};
+
+$("theme").onchange = async (e) => {
+  const m = await getMeta();
+  m.settings = m.settings ?? {};
+  m.settings.theme = e.target.value;
+  await setMeta(m);
+  applyTheme(e.target.value);
 };
 
 $("see-all").onclick = () => chrome.tabs.create({ url: chrome.runtime.getURL("src/app/app.html") });

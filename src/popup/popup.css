@@ -39,5 +39,6 @@ button.del { background: none; border: none; cursor: pointer; }
 .tag-x { background: none; border: none; color: inherit; cursor: pointer; font-size: 10px; padding: 0; }
 .tag-input { border: 1px solid var(--line); border-radius: 4px; padding: 2px 5px; font: inherit; min-width: 60px; flex: 1; background: var(--field-bg); color: var(--fg); }
 @media (prefers-color-scheme: dark) {
-  :root { --indigo: #818cf8; --line: #3a3b40; --muted: #9ca3af; --bg: #1f2024; --fg: #e5e7eb; --chip-bg: #312e81; --chip-ro-bg: #374151; --danger: #f87171; --field-bg: #26272c; }
+  :root:not([data-theme="light"]) { --indigo: #818cf8; --line: #3a3b40; --muted: #9ca3af; --bg: #1f2024; --fg: #e5e7eb; --chip-bg: #312e81; --chip-ro-bg: #374151; --danger: #f87171; --field-bg: #26272c; }
 }
+:root[data-theme="dark"] { --indigo: #818cf8; --line: #3a3b40; --muted: #9ca3af; --bg: #1f2024; --fg: #e5e7eb; --chip-bg: #312e81; --chip-ro-bg: #374151; --danger: #f87171; --field-bg: #26272c; }

@@ -16,5 +16,6 @@
 .due { color: var(--muted); }
 .due.overdue { color: var(--danger); font-weight: 600; }
 @media (prefers-color-scheme: dark) {
-  :host { --accent: #818cf8; --bg: #1f2024; --fg: #e5e7eb; --line: #3a3b40; --muted: #9ca3af; --danger: #f87171; }
+  :host(:not([data-theme="light"])) { --accent: #818cf8; --bg: #1f2024; --fg: #e5e7eb; --line: #3a3b40; --muted: #9ca3af; --danger: #f87171; }
 }
+:host([data-theme="dark"]) { --accent: #818cf8; --bg: #1f2024; --fg: #e5e7eb; --line: #3a3b40; --muted: #9ca3af; --danger: #f87171; }
