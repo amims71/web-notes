@@ -227,3 +227,28 @@ export function allTags(domainsMap) {
         for (const t of item.tags ?? []) set.add(t);
   return [...set].sort();
 }
+
+export function toMarkdown(domainsMap) {
+  const lines = [];
+  for (const key of Object.keys(domainsMap ?? {}).sort()) {
+    const bucket = domainsMap[key];
+    const lists = [...(bucket.lists ?? [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    if (!lists.some((l) => (l.items ?? []).some((i) => !i.archived))) continue;
+    lines.push(`# ${bucket.domain}`, "");
+    for (const list of lists) {
+      const items = [...(list.items ?? [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).filter((i) => !i.archived);
+      if (!items.length) continue;
+      lines.push(`## ${list.name}`, "");
+      for (const item of items) {
+        let line = `- [${item.done ? "x" : " "}] ${item.text}`;
+        if (item.url) line += ` [link](${item.url})`;
+        if (item.due != null) line += ` (due ${new Date(item.due).toISOString().slice(0, 16)}Z)`;
+        if ((item.tags ?? []).length) line += " " + item.tags.map((t) => "#" + t).join(" ");
+        lines.push(line);
+        if (item.note) lines.push(`  note: ${item.note}`);
+      }
+      lines.push("");
+    }
+  }
+  return lines.join("\n");
+}
