@@ -1,6 +1,6 @@
 :root { --indigo: #4f46e5; --line: #e5e7eb; --muted: #6b7280; }
 * { box-sizing: border-box; }
-body { width: 340px; margin: 0; font: 13px/1.4 system-ui, sans-serif; color: #111; max-height: 560px; overflow-y: auto; }
+body { width: 340px; margin: 0; font: 13px/1.4 system-ui, sans-serif; color: #111; max-height: 560px; overflow-y: auto; scrollbar-gutter: stable; }
 header, footer { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-bottom: 1px solid var(--line); }
 footer { border-bottom: none; border-top: 1px solid var(--line); position: sticky; bottom: 0; background: #fff; }
 .domain { font-weight: 600; }
