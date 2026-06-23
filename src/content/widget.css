@@ -1,8 +1,8 @@
 :host { --accent: #4f46e5; --bg: #fff; --fg: #111; --line: #e5e7eb; --muted: #6b7280; --danger: #dc2626; }
 .host { position: fixed; z-index: 2147483647; }
 .bubble { position: relative; cursor: pointer; user-select: none; width: 40px; height: 40px; }
-.bubble img { width: 40px; height: 40px; border-radius: 9px; display: block; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
-.bubble .count { position: absolute; top: -6px; right: -6px; background: var(--accent); color: #fff; border-radius: 10px; font-size: 10px; line-height: 1; padding: 3px 5px; box-shadow: 0 0 0 2px var(--bg); }
+.bubble img { width: 40px; height: 40px; border-radius: 9px; display: block; box-shadow: 0 2px 8px rgba(0,0,0,.3); pointer-events: none; }
+.bubble .count { position: absolute; top: -6px; right: -6px; background: var(--accent); color: #fff; border-radius: 10px; font-size: 10px; line-height: 1; padding: 3px 5px; box-shadow: 0 0 0 2px var(--bg); pointer-events: none; }
 .panel { width: 260px; max-height: 320px; overflow-y: auto; background: var(--bg); color: var(--fg); border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,.3); font: 13px system-ui, sans-serif; }
 .panel header { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--line); font-weight: 600; }
 .panel .close { cursor: pointer; border: none; background: none; font-size: 14px; }
