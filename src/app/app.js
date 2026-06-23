@@ -15,6 +15,15 @@ function el(tag, props = {}, children = []) {
   return n;
 }
 
+function download(filename, text, type) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const a = el("a", { href: url, download: filename });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 function toLocalInput(ms) {
   if (ms == null) return "";
   return new Date(ms - new Date(ms).getTimezoneOffset() * 60000).toISOString().slice(0, 16);
@@ -196,11 +205,13 @@ function detailsPanel(key, item) {
   tagWrap.append(tagInput);
   const tagsRow = el("div", { className: "detail-row" }, [el("span", { className: "detail-label", textContent: "Tags" }), tagWrap]);
 
-  const archiveBtn = el("button", { className: "btn", textContent: item.archived ? "Restore" : "Archive" });
-  archiveBtn.onclick = async () => { item.archived = !item.archived; item.updatedAt = Date.now(); await setDomain(key, b); };
-  const archiveRow = el("div", { className: "detail-row" }, [el("span", { className: "detail-label", textContent: "" }), archiveBtn]);
-
-  panel.append(linkRow, noteRow, dueRow, remindRow, repeatRow, tagsRow, archiveRow);
+  const rows = [linkRow, noteRow, dueRow, remindRow, repeatRow, tagsRow];
+  if (!state.archivedView) {
+    const archiveBtn = el("button", { className: "btn", textContent: item.archived ? "Restore" : "Archive" });
+    archiveBtn.onclick = async () => { item.archived = !item.archived; item.updatedAt = Date.now(); await setDomain(key, b); };
+    rows.push(el("div", { className: "detail-row" }, [el("span", { className: "detail-label", textContent: "" }), archiveBtn]));
+  }
+  panel.append(...rows);
   return panel;
 }
 
@@ -219,7 +230,7 @@ function renderItem(key, list, item) {
     input.focus();
   };
 
-  const row = el("div", { className: "item" + (item.done ? " done" : ""), draggable: true }, [cb, t]);
+  const row = el("div", { className: "item" + (item.done ? " done" : ""), draggable: state.sort === "manual" }, [cb, t]);
   if (item.pageUrl) row.append(el("span", { className: "pin", textContent: "★ " + item.pageUrl }));
   if (isHttpUrl(item.url)) row.append(el("a", { href: item.url, target: "_blank", textContent: "🔗" }));
   if (item.note) row.append(el("span", { className: "has-note", textContent: "📝", title: "Has notes" }));
@@ -296,13 +307,7 @@ function getSettingsAndExport() {
   return JSON.stringify(out, null, 2);
 }
 
-$("export").onclick = () => {
-  const blob = new Blob([getSettingsAndExport()], { type: "application/json" });
-  const a = el("a", { href: URL.createObjectURL(blob), download: `web-notes-backup-${new Date().toISOString().slice(0, 10)}.json` });
-  document.body.append(a);
-  a.click();
-  a.remove();
-};
+$("export").onclick = () => download(`web-notes-backup-${new Date().toISOString().slice(0, 10)}.json`, getSettingsAndExport(), "application/json");
 
 $("import").onclick = () => $("import-file").click();
 $("import-file").onchange = async (e) => {
@@ -324,13 +329,7 @@ $("import-file").onchange = async (e) => {
   await reload();
 };
 
-$("export-md").onclick = () => {
-  const blob = new Blob([toMarkdown(state.domains)], { type: "text/markdown" });
-  const a = el("a", { href: URL.createObjectURL(blob), download: `web-notes-${new Date().toISOString().slice(0, 10)}.md` });
-  document.body.append(a);
-  a.click();
-  a.remove();
-};
+$("export-md").onclick = () => download(`web-notes-${new Date().toISOString().slice(0, 10)}.md`, toMarkdown(state.domains), "text/markdown");
 
 $("backup").onchange = async (e) => {
   if (!meta) meta = await getMeta();
