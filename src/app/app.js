@@ -43,7 +43,7 @@ function matches(item) {
 
 // Global-view total: all open items for the domain (the toolbar badge is page-contextual and may differ).
 function openCount(bucket) {
-  return bucket.lists.reduce((n, l) => n + l.items.filter((i) => !i.done).length, 0);
+  return bucket.lists.reduce((n, l) => n + l.items.filter((i) => !i.done && !i.archived).length, 0);
 }
 
 function renderRail() {
