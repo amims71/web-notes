@@ -7,7 +7,7 @@
 .row { display: flex; align-items: center; gap: 6px; padding: 4px 10px; }
 .row .t { flex: 1; }
 .row.done .t { text-decoration: line-through; color: var(--muted); }
-.add { width: 100%; border: none; border-top: 1px solid var(--line); padding: 8px 10px; font: inherit; }
+.add { width: 100%; border: none; border-top: 1px solid var(--line); padding: 8px 10px; font: inherit; background: var(--bg); color: var(--fg); }
 .add:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
 .more { display: block; text-align: center; padding: 6px; color: var(--accent); cursor: pointer; border-top: 1px solid var(--line); }
 .flag { font-size: 11px; text-decoration: none; color: inherit; }
