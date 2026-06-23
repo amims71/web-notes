@@ -33,8 +33,12 @@ belongs.
 - **Full-page app** — a tree across all domains with rail filtering, search,
   hide-completed, item editing, **drag to reorder and move items between lists**,
   list reordering, and JSON **export / import** (merge or replace).
+- **Backup & export** — JSON **export / import** (merge or replace) and a
+  read-friendly **Markdown export**. An optional **backup reminder** (off / daily /
+  weekly) nudges you to export. Cross-device "sync" is file-based: export here, then
+  **Import → Merge** on another device (`mergeStores`, newer-item-wins).
 - **Local-only** — everything lives in `chrome.storage.local`; all surfaces stay
-  in sync via `chrome.storage.onChanged`.
+  in sync via `chrome.storage.onChanged`. No account, no backend, no cloud.
 
 ## Install (load unpacked)
 
