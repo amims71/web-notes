@@ -37,3 +37,9 @@ header .spacer { flex: 1; }
 .due-flag { font-size: 12px; color: var(--muted); }
 .due-flag.overdue { color: #dc2626; font-weight: 600; }
 .due-input, .remind-input, .repeat-input { padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; font: inherit; }
+.tags-edit { display: flex; flex-wrap: wrap; gap: 5px; flex: 1; align-items: center; }
+.tag-chip { background: #eef2ff; color: var(--indigo); border-radius: 11px; padding: 1px 8px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; }
+.tag-chip.ro { background: #f3f4f6; color: var(--muted); font-size: 11px; }
+.tag-x { background: none; border: none; color: inherit; cursor: pointer; font-size: 11px; padding: 0; }
+.tag-input { border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; font: inherit; min-width: 70px; }
+.rail-heading { font-size: 11px; color: var(--muted); margin: 10px 6px 2px; letter-spacing: .04em; }

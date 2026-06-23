@@ -10,6 +10,14 @@
       <h1>Web Notes</h1>
       <input id="search" type="search" placeholder="Search all notes…" />
       <label><input type="checkbox" id="hide-done" /> hide completed</label>
+      <label>Sort
+        <select id="sort">
+          <option value="manual">Manual</option>
+          <option value="due">Due date</option>
+          <option value="created">Created</option>
+          <option value="alpha">Alphabetical</option>
+        </select>
+      </label>
       <span class="spacer"></span>
       <button id="export" class="btn">⬆ Export</button>
       <button id="import" class="btn">⬇ Import</button>

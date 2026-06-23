@@ -1,7 +1,7 @@
 import { getAllDomains, setDomain, removeDomain, subscribe } from "../lib/storage.js";
-import { serializeStore, parseBackup, mergeStores, isHttpUrl, moveItem, reorderLists, dueState } from "../lib/model.js";
+import { serializeStore, parseBackup, mergeStores, isHttpUrl, moveItem, reorderLists, dueState, allTags, sortItems } from "../lib/model.js";
 
-export const state = { domains: {}, filter: "all", selected: new Set(), search: "", hideDone: false };
+export const state = { domains: {}, filter: "all", selected: new Set(), search: "", hideDone: false, sort: "manual", selectedTags: new Set(), archivedView: false };
 const expanded = new Set();
 
 const $ = (id) => document.getElementById(id);
@@ -34,8 +34,10 @@ function bucketKeys() {
 }
 
 function matches(item) {
+  if (state.archivedView ? !item.archived : item.archived) return false;
   if (state.hideDone && item.done) return false;
   if (state.search && !item.text.toLowerCase().includes(state.search.toLowerCase())) return false;
+  if (state.selectedTags.size && !(item.tags ?? []).some((t) => state.selectedTags.has(t))) return false;
   return true;
 }
 
@@ -67,6 +69,23 @@ function renderRail() {
     };
     rail.append(row);
   }
+  const tags = allTags(state.domains);
+  if (tags.length) {
+    rail.append(el("div", { className: "rail-heading", textContent: "TAGS" }));
+    for (const tag of tags) {
+      const row = el("div", { className: "dom" + (state.selectedTags.has(tag) ? " active" : "") }, [el("span", { textContent: "#" + tag })]);
+      row.onclick = (e) => {
+        if (!e.metaKey && !e.ctrlKey) { const had = state.selectedTags.has(tag); state.selectedTags.clear(); if (!had) state.selectedTags.add(tag); }
+        else state.selectedTags.has(tag) ? state.selectedTags.delete(tag) : state.selectedTags.add(tag);
+        render();
+      };
+      rail.append(row);
+    }
+  }
+  const archCount = Object.values(state.domains).reduce((n, b) => n + b.lists.reduce((m, l) => m + l.items.filter((i) => i.archived).length, 0), 0);
+  const arch = el("div", { className: "dom" + (state.archivedView ? " active" : "") }, [el("span", { textContent: "🗄 Archived" }), el("span", { className: "count", textContent: String(archCount) })]);
+  arch.onclick = () => { state.archivedView = !state.archivedView; render(); };
+  rail.append(arch);
 }
 
 function renderTree() {
@@ -79,7 +98,7 @@ function renderTree() {
     const block = el("div", { className: "domain-block" }, [el("h2", { textContent: b.domain })]);
     let blockHas = false;
     for (const list of [...b.lists].sort((a, c) => a.order - c.order)) {
-      const items = [...list.items].sort((a, c) => a.order - c.order).filter(matches);
+      const items = sortItems(list.items, state.sort).filter(matches);
       if (!items.length) continue;
       blockHas = true;
       const done = list.items.filter((i) => i.done).length;
@@ -157,7 +176,30 @@ function detailsPanel(key, item) {
   repeat.onchange = async () => { item.repeat = repeat.value || null; item.updatedAt = Date.now(); await setDomain(key, b); };
   const repeatRow = el("div", { className: "detail-row" }, [el("span", { className: "detail-label", textContent: "Repeat" }), repeat]);
 
-  panel.append(linkRow, noteRow, dueRow, remindRow, repeatRow);
+  const tagWrap = el("div", { className: "tags-edit" });
+  for (const tag of item.tags ?? []) {
+    const chip = el("span", { className: "tag-chip", textContent: "#" + tag });
+    const x = el("button", { className: "tag-x", textContent: "✕", title: "Remove tag" });
+    x.onclick = async () => { item.tags = (item.tags ?? []).filter((t) => t !== tag); item.updatedAt = Date.now(); await setDomain(key, b); };
+    chip.append(x);
+    tagWrap.append(chip);
+  }
+  const tagInput = el("input", { type: "text", className: "tag-input", placeholder: "+ tag" });
+  tagInput.onkeydown = async (e) => {
+    if (e.key !== "Enter") return;
+    const t = tagInput.value.trim().toLowerCase();
+    tagInput.value = "";
+    const tags = item.tags ?? [];
+    if (t && !tags.includes(t)) { item.tags = [...tags, t]; item.updatedAt = Date.now(); await setDomain(key, b); }
+  };
+  tagWrap.append(tagInput);
+  const tagsRow = el("div", { className: "detail-row" }, [el("span", { className: "detail-label", textContent: "Tags" }), tagWrap]);
+
+  const archiveBtn = el("button", { className: "btn", textContent: item.archived ? "Restore" : "Archive" });
+  archiveBtn.onclick = async () => { item.archived = !item.archived; item.updatedAt = Date.now(); await setDomain(key, b); };
+  const archiveRow = el("div", { className: "detail-row" }, [el("span", { className: "detail-label", textContent: "" }), archiveBtn]);
+
+  panel.append(linkRow, noteRow, dueRow, remindRow, repeatRow, tagsRow, archiveRow);
   return panel;
 }
 
@@ -185,6 +227,7 @@ function renderItem(key, list, item) {
     flag.title = new Date(item.due).toLocaleString();
     row.append(flag);
   }
+  for (const tag of item.tags ?? []) row.append(el("span", { className: "tag-chip ro", textContent: "#" + tag }));
 
   const panel = detailsPanel(key, item);
   const toggle = el("button", { className: "btn", textContent: expanded.has(item.id) ? "▾" : "▸", title: "Details" });
@@ -218,6 +261,12 @@ function renderItem(key, list, item) {
     await setDomain(key, moveItem(b, src.list, list.id, src.item, destIndex));
   };
 
+  if (state.archivedView) {
+    const restore = el("button", { className: "btn", textContent: "Restore", title: "Restore" });
+    restore.onclick = async () => { item.archived = false; item.updatedAt = Date.now(); await setDomain(key, b); };
+    row.append(restore);
+  }
+
   return el("div", { className: "item-wrap" }, [row, panel]);
 }
 
@@ -233,6 +282,7 @@ export async function reload() {
 
 $("search").oninput = (e) => { state.search = e.target.value; renderTree(); };
 $("hide-done").onchange = (e) => { state.hideDone = e.target.checked; renderTree(); };
+$("sort").onchange = (e) => { state.sort = e.target.value; renderTree(); };
 
 subscribe(reload);
 reload();
