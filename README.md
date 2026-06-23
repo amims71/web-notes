@@ -23,7 +23,8 @@ belongs.
 - **Toolbar popup** — the current domain's lists at a click, with inline
   add / check / edit / delete, **"save this page"**, and a per-domain widget toggle.
 - **On-page floating widget** — a draggable bubble (closed shadow DOM, no page
-  CSS bleed) showing open items for the page; quick-add and check off in place.
+  CSS bleed) showing open items for the page with 🔗/📝/📅 indicators; quick-add
+  and check off in place.
 - **Toolbar badge** — open-item count for the active tab's domain.
 - **Full-page app** — a tree across all domains with rail filtering, search,
   hide-completed, item editing, **drag to reorder and move items between lists**,
