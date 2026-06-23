@@ -77,7 +77,7 @@ chrome.runtime.onStartup.addListener(() => {
 
 function notifyDue(item, domain) {
   const id = isHttpUrl(item.url) ? item.url : "webnotes:app:" + item.id;
-  chrome.notifications.create(id, {
+  return chrome.notifications.create(id, {
     type: "basic",
     iconUrl: chrome.runtime.getURL("icons/128.png"),
     title: (item.text || "Reminder").slice(0, 80),
@@ -98,7 +98,7 @@ async function runDueSweep() {
   const domains = await getAllDomains();
   for (const [key, bucket] of Object.entries(domains)) {
     const { due, bucket: next } = sweepDue(bucket, lastCheck, now);
-    for (const item of due) notifyDue(item, bucket.domain);
+    await Promise.all(due.map((item) => notifyDue(item, bucket.domain)));
     if (next !== bucket) await setDomain(key, next);
   }
   meta.settings.lastDueCheck = now;
