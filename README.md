@@ -9,15 +9,21 @@ belongs.
 
 ## Features
 
-- **Per-domain lists** — one or more named lists per domain, each with checkable
-  items, optional links, and optional per-page pins.
+- **Per-domain lists** — one or more named lists per domain, each holding
+  checkable items. Each item can carry an optional **link** and free-form
+  **notes** (edit both via the ▸ details panel) and an optional per-page pin.
+- **Capture from anywhere** — right-click **selected text, the page, or a link**
+  → *Add to Web Notes*, landing in that domain's auto-created **Inbox** list.
+- **Keyboard shortcuts** — open the popup (`Alt+Shift+N`) or save the current
+  page (`Alt+Shift+S`); rebindable at `chrome://extensions/shortcuts`.
 - **Toolbar popup** — the current domain's lists at a click, with inline
-  add/check/edit/delete.
+  add / check / edit / delete, **"save this page"**, and a per-domain widget toggle.
 - **On-page floating widget** — a draggable bubble (closed shadow DOM, no page
   CSS bleed) showing open items for the page; quick-add and check off in place.
 - **Toolbar badge** — open-item count for the active tab's domain.
 - **Full-page app** — a tree across all domains with rail filtering, search,
-  hide-completed, drag-reorder, and JSON **export / import** (merge or replace).
+  hide-completed, item editing, **drag to reorder and move items between lists**,
+  list reordering, and JSON **export / import** (merge or replace).
 - **Local-only** — everything lives in `chrome.storage.local`; all surfaces stay
   in sync via `chrome.storage.onChanged`.
 
