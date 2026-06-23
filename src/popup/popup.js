@@ -43,7 +43,7 @@ function detailsPanel(item) {
   link.oninput = () => { item.url = link.value.trim() || null; };
   link.onchange = async () => { item.url = link.value.trim() || null; item.updatedAt = Date.now(); await save(); };
   const use = el("button", { className: "link small", textContent: "Use this page", title: "Use the current page URL" });
-  use.onclick = async () => { item.url = scope.pageUrl; item.updatedAt = Date.now(); await save(); };
+  use.onclick = async () => { if (!scope?.pageUrl) return; item.url = scope.pageUrl; item.updatedAt = Date.now(); await save(); };
   const clearLink = el("button", { className: "del", textContent: "✕", title: "Clear link" });
   clearLink.onclick = async () => { item.url = null; item.updatedAt = Date.now(); await save(); };
   const linkRow = el("div", { className: "detail-row" }, [el("span", { className: "detail-label", textContent: "Link" }), link, use, clearLink]);
