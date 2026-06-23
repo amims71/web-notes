@@ -1,8 +1,8 @@
-:root { --indigo: #4f46e5; --line: #e5e7eb; --muted: #6b7280; }
+:root { --indigo: #4f46e5; --line: #e5e7eb; --muted: #6b7280; --bg: #fff; --fg: #111; --chip-bg: #eef2ff; --chip-ro-bg: #f3f4f6; --danger: #dc2626; --field-bg: #fff; }
 * { box-sizing: border-box; }
-body { width: 340px; margin: 0; font: 13px/1.4 system-ui, sans-serif; color: #111; max-height: 560px; overflow-y: auto; scrollbar-gutter: stable; }
+body { width: 340px; margin: 0; font: 13px/1.4 system-ui, sans-serif; background: var(--bg); color: var(--fg); max-height: 560px; overflow-y: auto; scrollbar-gutter: stable; }
 header, footer { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-bottom: 1px solid var(--line); }
-footer { border-bottom: none; border-top: 1px solid var(--line); position: sticky; bottom: 0; background: #fff; }
+footer { border-bottom: none; border-top: 1px solid var(--line); position: sticky; bottom: 0; background: var(--bg); }
 .domain { font-weight: 600; }
 .link { background: none; border: none; color: var(--indigo); cursor: pointer; font-size: 12px; }
 .list { padding: 6px 10px; border-bottom: 1px solid var(--line); }
@@ -16,7 +16,7 @@ footer { border-bottom: none; border-top: 1px solid var(--line); position: stick
 .item.done .text { text-decoration: line-through; color: var(--muted); }
 .item a { text-decoration: none; }
 .add-row { display: flex; gap: 4px; padding: 4px 0; }
-.add-row input[type="text"] { flex: 1; padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px; }
+.add-row input[type="text"] { flex: 1; padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px; background: var(--field-bg); color: var(--fg); }
 .add-row .pin { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 3px; }
 .empty { padding: 16px 10px; color: var(--muted); text-align: center; }
 h2 { font-size: 12px; margin: 8px 10px 2px; color: var(--muted); }
@@ -27,14 +27,17 @@ button.del { background: none; border: none; cursor: pointer; }
 .details { padding: 4px 0 6px 22px; }
 .detail-row { display: flex; align-items: flex-start; gap: 6px; margin: 3px 0; }
 .detail-label { width: 36px; color: var(--muted); font-size: 11px; padding-top: 3px; }
-.link-input { flex: 1; padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px; font: inherit; }
-.note-input { flex: 1; padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px; font: inherit; resize: vertical; }
+.link-input { flex: 1; padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px; font: inherit; background: var(--field-bg); color: var(--fg); }
+.note-input { flex: 1; padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px; font: inherit; resize: vertical; background: var(--field-bg); color: var(--fg); }
 .link.small { font-size: 11px; white-space: nowrap; }
 .due-flag { font-size: 11px; color: var(--muted); }
-.due-flag.overdue { color: #dc2626; font-weight: 600; }
-.due-input, .remind-input, .repeat-input { padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px; font: inherit; }
+.due-flag.overdue { color: var(--danger); font-weight: 600; }
+.due-input, .remind-input, .repeat-input { padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px; font: inherit; background: var(--field-bg); color: var(--fg); }
 .tags-edit { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; align-items: center; }
-.tag-chip { background: #eef2ff; color: var(--indigo); border-radius: 10px; padding: 1px 7px; font-size: 11px; display: inline-flex; align-items: center; gap: 3px; }
-.tag-chip.ro { background: #f3f4f6; color: var(--muted); }
+.tag-chip { background: var(--chip-bg); color: var(--indigo); border-radius: 10px; padding: 1px 7px; font-size: 11px; display: inline-flex; align-items: center; gap: 3px; }
+.tag-chip.ro { background: var(--chip-ro-bg); color: var(--muted); }
 .tag-x { background: none; border: none; color: inherit; cursor: pointer; font-size: 10px; padding: 0; }
-.tag-input { border: 1px solid var(--line); border-radius: 4px; padding: 2px 5px; font: inherit; min-width: 60px; flex: 1; }
+.tag-input { border: 1px solid var(--line); border-radius: 4px; padding: 2px 5px; font: inherit; min-width: 60px; flex: 1; background: var(--field-bg); color: var(--fg); }
+@media (prefers-color-scheme: dark) {
+  :root { --indigo: #818cf8; --line: #3a3b40; --muted: #9ca3af; --bg: #1f2024; --fg: #e5e7eb; --chip-bg: #312e81; --chip-ro-bg: #374151; --danger: #f87171; --field-bg: #26272c; }
+}
