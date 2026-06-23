@@ -49,7 +49,8 @@ export function validateBucket(b) {
       l.items.every((it) =>
         it && typeof it.id === "string" && typeof it.text === "string" && typeof it.done === "boolean" &&
         (it.pageUrl === null || typeof it.pageUrl === "string") &&
-        (it.url === null || typeof it.url === "string")),
+        (it.url === null || typeof it.url === "string") &&
+        (it.note === null || typeof it.note === "string")),
   );
 }
 

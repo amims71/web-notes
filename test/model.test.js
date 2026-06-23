@@ -67,3 +67,11 @@ test("validateBucket rejects non-string pageUrl or url on items", () => {
   bad2.lists.push(l2);
   assert.equal(validateBucket(bad2), false);
 });
+
+test("validateBucket rejects a non-string note on items", () => {
+  const bad = makeDomainBucket("a.com");
+  const l = makeList("L", { id: "l1" });
+  l.items.push({ ...makeItem({ text: "t" }, { id: "i1", now: 1 }), note: 123 });
+  bad.lists.push(l);
+  assert.equal(validateBucket(bad), false);
+});
