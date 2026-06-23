@@ -90,7 +90,30 @@ function detailsPanel(item) {
   repeat.onchange = async () => { item.repeat = repeat.value || null; item.updatedAt = Date.now(); await save(); };
   const repeatRow = el("div", { className: "detail-row" }, [el("span", { className: "detail-label", textContent: "Repeat" }), repeat]);
 
-  panel.append(linkRow, noteRow, dueRow, remindRow, repeatRow);
+  const tagWrap = el("div", { className: "tags-edit" });
+  for (const tag of item.tags ?? []) {
+    const chip = el("span", { className: "tag-chip", textContent: "#" + tag });
+    const x = el("button", { className: "tag-x", textContent: "✕", title: "Remove tag" });
+    x.onclick = async () => { item.tags = (item.tags ?? []).filter((t) => t !== tag); item.updatedAt = Date.now(); await save(); };
+    chip.append(x);
+    tagWrap.append(chip);
+  }
+  const tagInput = el("input", { type: "text", className: "tag-input", placeholder: "+ tag" });
+  tagInput.onkeydown = async (e) => {
+    if (e.key !== "Enter") return;
+    const t = tagInput.value.trim().toLowerCase();
+    tagInput.value = "";
+    const tags = item.tags ?? [];
+    if (t && !tags.includes(t)) { item.tags = [...tags, t]; item.updatedAt = Date.now(); await save(); }
+  };
+  tagWrap.append(tagInput);
+  const tagsRow = el("div", { className: "detail-row" }, [el("span", { className: "detail-label", textContent: "Tags" }), tagWrap]);
+
+  const archiveBtn = el("button", { className: "link small", textContent: "Archive" });
+  archiveBtn.onclick = async () => { item.archived = true; item.updatedAt = Date.now(); await save(); };
+  const archiveRow = el("div", { className: "detail-row" }, [el("span", { className: "detail-label", textContent: "" }), archiveBtn]);
+
+  panel.append(linkRow, noteRow, dueRow, remindRow, repeatRow, tagsRow, archiveRow);
   return panel;
 }
 
@@ -110,6 +133,7 @@ function itemRow(list, item) {
     flag.title = new Date(item.due).toLocaleString();
     row.append(flag);
   }
+  for (const tag of item.tags ?? []) row.append(el("span", { className: "tag-chip ro", textContent: "#" + tag }));
 
   const panel = detailsPanel(item);
   const toggle = el("button", { className: "disclosure", textContent: expanded.has(item.id) ? "▾" : "▸", title: "Details" });
@@ -163,7 +187,7 @@ function render() {
   if (!lists.length) root.append(el("div", { className: "empty", textContent: "No lists yet. Add one below." }));
 
   for (const list of lists) {
-    const domainItems = list.items.filter((i) => i.pageUrl === null);
+    const domainItems = list.items.filter((i) => i.pageUrl === null && !i.archived);
     const open = domainItems.filter((i) => !i.done).length;
     const name = el("span", { className: "name", textContent: list.name });
     const count = el("span", { className: "count", textContent: `${domainItems.length - open}/${domainItems.length}` });
@@ -187,7 +211,7 @@ function render() {
 }
 
 function renderPageSection() {
-  const pageItems = bucket.lists.flatMap((l) => l.items.filter((i) => i.pageUrl === scope.pageUrl).map((i) => ({ list: l, item: i })));
+  const pageItems = bucket.lists.flatMap((l) => l.items.filter((i) => i.pageUrl === scope.pageUrl && !i.archived).map((i) => ({ list: l, item: i })));
   const section = $("page-section");
   section.hidden = pageItems.length === 0;
   const box = $("page-items");
