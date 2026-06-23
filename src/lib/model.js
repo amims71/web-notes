@@ -109,3 +109,39 @@ export function mergeStores(current, incoming) {
   }
   return out;
 }
+
+export function moveItem(bucket, fromListId, toListId, itemId, toIndex) {
+  const from = bucket.lists.find((l) => l.id === fromListId);
+  const to = bucket.lists.find((l) => l.id === toListId);
+  if (!from || !to) return bucket;
+  const item = from.items.find((i) => i.id === itemId);
+  if (!item) return bucket;
+  const reindex = (items) => items.map((it, i) => ({ ...it, order: i }));
+  const clamp = (n, len) => Math.max(0, Math.min(n, len));
+  const lists = bucket.lists.map((l) => {
+    if (fromListId === toListId && l.id === fromListId) {
+      const items = l.items.filter((i) => i.id !== itemId);
+      items.splice(clamp(toIndex, items.length), 0, item);
+      return { ...l, items: reindex(items) };
+    }
+    if (l.id === fromListId) return { ...l, items: reindex(l.items.filter((i) => i.id !== itemId)) };
+    if (l.id === toListId) {
+      const items = [...l.items];
+      items.splice(clamp(toIndex, items.length), 0, item);
+      return { ...l, items: reindex(items) };
+    }
+    return l;
+  });
+  return { ...bucket, lists };
+}
+
+export function reorderLists(bucket, orderedListIds) {
+  const byId = new Map(bucket.lists.map((l) => [l.id, l]));
+  const ordered = [];
+  for (const id of orderedListIds) {
+    const l = byId.get(id);
+    if (l) { ordered.push(l); byId.delete(id); }
+  }
+  for (const l of byId.values()) ordered.push(l);
+  return { ...bucket, lists: ordered.map((l, i) => ({ ...l, order: i })) };
+}
