@@ -1,7 +1,8 @@
-import { getAllDomains, setDomain, removeDomain, subscribe } from "../lib/storage.js";
-import { serializeStore, parseBackup, mergeStores, isHttpUrl, moveItem, reorderLists, dueState, allTags, sortItems } from "../lib/model.js";
+import { getAllDomains, setDomain, removeDomain, subscribe, getMeta, setMeta } from "../lib/storage.js";
+import { serializeStore, parseBackup, mergeStores, isHttpUrl, moveItem, reorderLists, dueState, allTags, sortItems, toMarkdown } from "../lib/model.js";
 
 export const state = { domains: {}, filter: "all", selected: new Set(), search: "", hideDone: false, sort: "manual", selectedTags: new Set(), archivedView: false };
+let meta = null;
 const expanded = new Set();
 
 const $ = (id) => document.getElementById(id);
@@ -277,6 +278,8 @@ export function render() {
 
 export async function reload() {
   state.domains = await getAllDomains();
+  meta = await getMeta();
+  $("backup").value = meta.settings?.backupReminder ?? "off";
   render();
 }
 
@@ -319,4 +322,19 @@ $("import-file").onchange = async (e) => {
   for (const [key, bucket] of Object.entries(next)) await setDomain(key, bucket);
   e.target.value = "";
   await reload();
+};
+
+$("export-md").onclick = () => {
+  const blob = new Blob([toMarkdown(state.domains)], { type: "text/markdown" });
+  const a = el("a", { href: URL.createObjectURL(blob), download: `web-notes-${new Date().toISOString().slice(0, 10)}.md` });
+  document.body.append(a);
+  a.click();
+  a.remove();
+};
+
+$("backup").onchange = async (e) => {
+  meta.settings = meta.settings ?? {};
+  meta.settings.backupReminder = e.target.value;
+  if (e.target.value !== "off") meta.settings.lastBackupReminderAt = Date.now();
+  await setMeta(meta);
 };
