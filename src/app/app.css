@@ -26,7 +26,6 @@ header .spacer { flex: 1; }
 .dragging { opacity: .4; }
 .drag-over { border-top: 2px solid var(--indigo); }
 .has-note { font-size: 12px; }
-.item-wrap { }
 .details { padding: 4px 0 8px 28px; }
 .detail-row { display: flex; align-items: flex-start; gap: 8px; margin: 4px 0; }
 .detail-label { width: 42px; color: var(--muted); font-size: 12px; padding-top: 5px; }

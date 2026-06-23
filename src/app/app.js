@@ -88,7 +88,7 @@ function renderTree() {
         const src = JSON.parse(e.dataTransfer.getData("text/plain"));
         if (src.key !== key) return; // same domain only
         if (src.type === "item") {
-          await setDomain(key, moveItem(b, src.list, list.id, src.item, b.lists.find((l) => l.id === list.id).items.length));
+          await setDomain(key, moveItem(b, src.list, list.id, src.item, list.items.length));
         } else if (src.type === "list" && src.list !== list.id) {
           const ids = [...b.lists].sort((a, c) => a.order - c.order).map((l) => l.id).filter((id) => id !== src.list);
           ids.splice(ids.indexOf(list.id), 0, src.list);
