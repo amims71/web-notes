@@ -9,6 +9,7 @@ test("makeItem fills defaults and respects injected id/now", () => {
   assert.deepEqual(it, {
     id: "fixed-id", text: "hi", done: false, url: null, note: null,
     pageUrl: null, createdAt: 1000, updatedAt: 1000, order: 0, due: null, remindLead: null, repeat: null,
+    tags: [], archived: false,
   });
 });
 

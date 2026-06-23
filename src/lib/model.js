@@ -18,6 +18,8 @@ export function makeItem(fields = {}, { id = newId(), now = Date.now() } = {}) {
     due: fields.due ?? null,
     remindLead: fields.remindLead ?? null,
     repeat: fields.repeat ?? null,
+    tags: fields.tags ?? [],
+    archived: fields.archived ?? false,
   };
 }
 
@@ -56,7 +58,9 @@ export function validateBucket(b) {
         (it.note === null || typeof it.note === "string") &&
         (it.due == null || typeof it.due === "number") &&
         (it.remindLead == null || typeof it.remindLead === "number") &&
-        (it.repeat == null || typeof it.repeat === "string")),
+        (it.repeat == null || typeof it.repeat === "string") &&
+        (it.tags == null || (Array.isArray(it.tags) && it.tags.every((t) => typeof t === "string"))) &&
+        (it.archived == null || typeof it.archived === "boolean")),
   );
 }
 
