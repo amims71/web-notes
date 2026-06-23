@@ -1,6 +1,6 @@
 import { resolveScope } from "./lib/scope.js";
-import { countOpenItems, addToInbox, makeDomainBucket } from "./lib/model.js";
-import { getDomain, setDomain } from "./lib/storage.js";
+import { countOpenItems, addToInbox, makeDomainBucket, sweepDue, isHttpUrl } from "./lib/model.js";
+import { getDomain, setDomain, getAllDomains, getMeta, setMeta } from "./lib/storage.js";
 
 async function updateBadgeForTab(tab) {
   if (!tab || !tab.url) return;
@@ -21,6 +21,7 @@ async function refreshActiveTab() {
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.action.setBadgeBackgroundColor({ color: "#4f46e5" });
+  chrome.alarms.create("due-check", { periodInMinutes: 1 });
   const web = ["http://*/*", "https://*/*"];
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({ id: "capture-selection", title: "Add selection to Web Notes", contexts: ["selection"], documentUrlPatterns: web });
@@ -68,4 +69,48 @@ chrome.commands.onCommand.addListener(async (command) => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.url) return;
   await captureToDomain(tab.url, { text: tab.title || tab.url, url: tab.url });
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  chrome.alarms.create("due-check", { periodInMinutes: 1 });
+});
+
+function notifyDue(item, domain) {
+  const id = isHttpUrl(item.url) ? item.url : "webnotes:app:" + item.id;
+  chrome.notifications.create(id, {
+    type: "basic",
+    iconUrl: chrome.runtime.getURL("icons/128.png"),
+    title: (item.text || "Reminder").slice(0, 80),
+    message: domain,
+  });
+}
+
+async function runDueSweep() {
+  const meta = await getMeta();
+  meta.settings = meta.settings ?? {};
+  const now = Date.now();
+  const lastCheck = meta.settings.lastDueCheck;
+  if (lastCheck == null) {
+    meta.settings.lastDueCheck = now;
+    await setMeta(meta);
+    return;
+  }
+  const domains = await getAllDomains();
+  for (const [key, bucket] of Object.entries(domains)) {
+    const { due, bucket: next } = sweepDue(bucket, lastCheck, now);
+    for (const item of due) notifyDue(item, bucket.domain);
+    if (next !== bucket) await setDomain(key, next);
+  }
+  meta.settings.lastDueCheck = now;
+  await setMeta(meta);
+}
+
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === "due-check") await runDueSweep();
+});
+
+chrome.notifications.onClicked.addListener((id) => {
+  const url = id.startsWith("http") ? id : chrome.runtime.getURL("src/app/app.html");
+  chrome.tabs.create({ url });
+  chrome.notifications.clear(id);
 });

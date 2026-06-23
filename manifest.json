@@ -3,7 +3,7 @@
   "name": "Web Notes",
   "version": "0.1.0",
   "description": "Per-domain notes, todos, and lists, stored locally.",
-  "permissions": ["storage", "unlimitedStorage", "tabs", "contextMenus"],
+  "permissions": ["storage", "unlimitedStorage", "tabs", "contextMenus", "notifications", "alarms"],
   "host_permissions": ["<all_urls>"],
   "action": {
     "default_popup": "src/popup/popup.html",
