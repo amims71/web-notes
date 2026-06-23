@@ -146,3 +146,17 @@ export function reorderLists(bucket, orderedListIds) {
   for (const l of byId.values()) ordered.push(l);
   return { ...bucket, lists: ordered.map((l, i) => ({ ...l, order: i })) };
 }
+
+export const INBOX_NAME = "Inbox";
+
+export function addToInbox(bucket, fields, opts = {}) {
+  const lists = [...bucket.lists];
+  let inbox = lists.find((l) => l.name === INBOX_NAME);
+  if (!inbox) {
+    inbox = makeList(INBOX_NAME);
+    inbox.order = nextOrder(lists);
+    lists.push(inbox);
+  }
+  const item = makeItem({ ...fields, order: nextOrder(inbox.items) }, opts);
+  return { ...bucket, lists: lists.map((l) => (l === inbox ? { ...l, items: [...l.items, item] } : l)) };
+}
