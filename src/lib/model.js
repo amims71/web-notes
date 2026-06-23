@@ -153,6 +153,46 @@ export function reorderLists(bucket, orderedListIds) {
   return { ...bucket, lists: ordered.map((l, i) => ({ ...l, order: i })) };
 }
 
+export function reminderTime(item) {
+  if (item.due == null) return null;
+  return item.due - (item.remindLead || 0) * 60000;
+}
+
+export function nextOccurrence(due, repeat, now) {
+  const step = repeat === "weekly" ? 7 * 86400000 : 86400000;
+  let next = due;
+  while (next <= now) next += step;
+  return next;
+}
+
+export function dueState(item, now) {
+  if (item.due == null || item.done) return "none";
+  return item.due <= now ? "overdue" : "upcoming";
+}
+
+export function sweepDue(bucket, lastCheck, now) {
+  const due = [];
+  let bucketChanged = false;
+  const lists = bucket.lists.map((list) => {
+    let listChanged = false;
+    const items = list.items.map((item) => {
+      if (item.done || item.due == null) return item;
+      const rt = reminderTime(item);
+      if (rt > lastCheck && rt <= now) {
+        due.push(item);
+        if (item.repeat) {
+          listChanged = true;
+          bucketChanged = true;
+          return { ...item, due: nextOccurrence(item.due, item.repeat, now) };
+        }
+      }
+      return item;
+    });
+    return listChanged ? { ...list, items } : list;
+  });
+  return { due, bucket: bucketChanged ? { ...bucket, lists } : bucket };
+}
+
 export const INBOX_NAME = "Inbox";
 
 export function addToInbox(bucket, fields, opts = {}) {
