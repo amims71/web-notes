@@ -35,7 +35,7 @@
     const out = [];
     for (const l of bucket?.lists ?? [])
       for (const it of l.items)
-        if (!it.done && (it.pageUrl === null || it.pageUrl === scope.pageUrl)) out.push({ list: l, item: it });
+        if (!it.done && !it.archived && (it.pageUrl === null || it.pageUrl === scope.pageUrl)) out.push({ list: l, item: it });
     return out;
   }
 
