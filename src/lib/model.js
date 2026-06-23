@@ -69,7 +69,7 @@ export function countOpenItems(bucket, { pageUrl } = {}) {
   let n = 0;
   for (const list of bucket.lists)
     for (const it of list.items)
-      if (!it.done && (it.pageUrl === null || it.pageUrl === pageUrl)) n++;
+      if (!it.done && !it.archived && (it.pageUrl === null || it.pageUrl === pageUrl)) n++;
   return n;
 }
 
@@ -180,7 +180,7 @@ export function sweepDue(bucket, lastCheck, now) {
   const lists = bucket.lists.map((list) => {
     let listChanged = false;
     const items = list.items.map((item) => {
-      if (item.done || item.due == null) return item;
+      if (item.done || item.archived || item.due == null) return item;
       const rt = reminderTime(item);
       if (rt > lastCheck && rt <= now) {
         due.push(item);
@@ -209,4 +209,21 @@ export function addToInbox(bucket, fields, opts = {}) {
   }
   const item = makeItem({ ...fields, order: nextOrder(inbox.items) }, opts);
   return { ...bucket, lists: lists.map((l) => (l === inbox ? { ...l, items: [...l.items, item] } : l)) };
+}
+
+export function sortItems(items, mode) {
+  const copy = [...items];
+  if (mode === "due") return copy.sort((a, b) => (a.due == null) - (b.due == null) || (a.due ?? 0) - (b.due ?? 0));
+  if (mode === "created") return copy.sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
+  if (mode === "alpha") return copy.sort((a, b) => (a.text || "").localeCompare(b.text || "", undefined, { sensitivity: "base" }));
+  return copy.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+}
+
+export function allTags(domainsMap) {
+  const set = new Set();
+  for (const bucket of Object.values(domainsMap ?? {}))
+    for (const list of bucket.lists ?? [])
+      for (const item of list.items ?? [])
+        for (const t of item.tags ?? []) set.add(t);
+  return [...set].sort();
 }
