@@ -5,7 +5,7 @@
   if (scope.kind !== "web") return;
 
   const { makeItem, nextOrder, countOpenItems, isHttpUrl, dueState } = await import(base("src/lib/model.js"));
-  const { getDomain, setDomain, subscribe } = await import(base("src/lib/storage.js"));
+  const { getDomain, setDomain, subscribe, getMeta, setMeta } = await import(base("src/lib/storage.js"));
 
   const host = document.createElement("div");
   host.id = "__web_notes_host";
@@ -145,12 +145,17 @@
         corner = { right: `${Math.max(8, innerWidth - ev.clientX - 20)}px`, bottom: `${Math.max(8, innerHeight - ev.clientY - 20)}px` };
         placement();
       };
-      const up = () => {
+      const up = async () => {
         node.removeEventListener("pointermove", move);
         node.removeEventListener("pointerup", up);
         node.removeEventListener("pointercancel", cancel);
-        if (moved) node.onclick = (ev) => ev.stopPropagation();
-        else { expanded = true; render(); }
+        if (moved) {
+          node.onclick = (ev) => ev.stopPropagation();
+          const m = await getMeta();
+          m.settings = m.settings ?? {};
+          m.settings.widgetCorner = corner;
+          await setMeta(m);
+        } else { expanded = true; render(); }
       };
       const cancel = () => {
         node.removeEventListener("pointermove", move);
@@ -164,6 +169,8 @@
   }
 
   async function reload() { bucket = await getDomain(scope.key); render(); }
+  const savedMeta = await getMeta();
+  if (savedMeta.settings?.widgetCorner) corner = savedMeta.settings.widgetCorner;
   subscribe(reload);
   await reload();
 })();

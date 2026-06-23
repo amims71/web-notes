@@ -200,7 +200,8 @@ function render() {
     };
     const head = el("div", { className: "list-head" }, [name, count, del]);
     const body = el("div");
-    head.onclick = () => { body.hidden = !body.hidden; };
+    body.hidden = !!list.collapsed;
+    head.onclick = async () => { list.collapsed = !list.collapsed; body.hidden = list.collapsed; await save(); };
     for (const item of domainItems.sort((a, b) => a.order - b.order)) body.append(itemRow(list, item));
     body.append(addRow(list));
     root.append(el("div", { className: "list" }, [head, body]));
