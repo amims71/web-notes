@@ -333,6 +333,7 @@ $("export-md").onclick = () => {
 };
 
 $("backup").onchange = async (e) => {
+  if (!meta) meta = await getMeta();
   meta.settings = meta.settings ?? {};
   meta.settings.backupReminder = e.target.value;
   if (e.target.value !== "off") meta.settings.lastBackupReminderAt = Date.now();
