@@ -22,6 +22,7 @@ async function refreshActiveTab() {
 chrome.runtime.onInstalled.addListener(() => {
   chrome.action.setBadgeBackgroundColor({ color: "#4f46e5" });
   chrome.alarms.create("due-check", { periodInMinutes: 1 });
+  chrome.alarms.create("backup-reminder", { periodInMinutes: 1440 });
   const web = ["http://*/*", "https://*/*"];
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({ id: "capture-selection", title: "Add selection to Web Notes", contexts: ["selection"], documentUrlPatterns: web });
@@ -73,6 +74,7 @@ chrome.commands.onCommand.addListener(async (command) => {
 
 chrome.runtime.onStartup.addListener(() => {
   chrome.alarms.create("due-check", { periodInMinutes: 1 });
+  chrome.alarms.create("backup-reminder", { periodInMinutes: 1440 });
 });
 
 function notifyDue(item, domain) {
@@ -107,6 +109,7 @@ async function runDueSweep() {
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === "due-check") await runDueSweep();
+  else if (alarm.name === "backup-reminder") await runBackupReminder();
 });
 
 chrome.notifications.onClicked.addListener(async (id) => {
@@ -114,3 +117,27 @@ chrome.notifications.onClicked.addListener(async (id) => {
   await chrome.tabs.create({ url });
   await chrome.notifications.clear(id);
 });
+
+async function runBackupReminder() {
+  const meta = await getMeta();
+  meta.settings = meta.settings ?? {};
+  const setting = meta.settings.backupReminder ?? "off";
+  if (setting === "off") return;
+  const now = Date.now();
+  const last = meta.settings.lastBackupReminderAt;
+  if (last == null) {
+    meta.settings.lastBackupReminderAt = now;
+    await setMeta(meta);
+    return;
+  }
+  const interval = (setting === "weekly" ? 7 : 1) * 86400000;
+  if (now - last < interval) return;
+  await chrome.notifications.create("webnotes:app:backup", {
+    type: "basic",
+    iconUrl: chrome.runtime.getURL("icons/128.png"),
+    title: "Back up your Web Notes",
+    message: "Open Web Notes to export a backup.",
+  });
+  meta.settings.lastBackupReminderAt = now;
+  await setMeta(meta);
+}
