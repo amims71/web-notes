@@ -109,8 +109,8 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === "due-check") await runDueSweep();
 });
 
-chrome.notifications.onClicked.addListener((id) => {
+chrome.notifications.onClicked.addListener(async (id) => {
   const url = id.startsWith("http") ? id : chrome.runtime.getURL("src/app/app.html");
-  chrome.tabs.create({ url });
-  chrome.notifications.clear(id);
+  await chrome.tabs.create({ url });
+  await chrome.notifications.clear(id);
 });
