@@ -12,6 +12,10 @@ belongs.
 - **Per-domain lists** — one or more named lists per domain, each holding
   checkable items. Each item can carry an optional **link** and free-form
   **notes** (edit both via the ▸ details panel) and an optional per-page pin.
+- **Due dates & reminders** — give an item a due date/time, an optional
+  **lead time** (e.g. 30 min before), and optional **daily/weekly repeat**. A
+  background alarm fires a **system notification** (click → opens the item's
+  link); overdue items are flagged in red.
 - **Capture from anywhere** — right-click **selected text, the page, or a link**
   → *Add to Web Notes*, landing in that domain's auto-created **Inbox** list.
 - **Keyboard shortcuts** — open the popup (`Alt+Shift+N`) or save the current
