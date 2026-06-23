@@ -1,30 +1,78 @@
 {
   "manifest_version": 3,
   "name": "Web Notes",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Per-domain notes, todos, and lists, stored locally.",
-  "permissions": ["storage", "unlimitedStorage", "tabs", "contextMenus", "notifications", "alarms"],
-  "host_permissions": ["<all_urls>"],
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "tabs",
+    "contextMenus",
+    "notifications",
+    "alarms"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "action": {
     "default_popup": "src/popup/popup.html",
-    "default_icon": { "16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png", "128": "icons/128.png" }
+    "default_icon": {
+      "16": "icons/16.png",
+      "32": "icons/32.png",
+      "48": "icons/48.png",
+      "128": "icons/128.png"
+    }
   },
-  "icons": { "16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png", "128": "icons/128.png" },
-  "background": { "service_worker": "src/background.js", "type": "module" },
+  "icons": {
+    "16": "icons/16.png",
+    "32": "icons/32.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "background": {
+    "service_worker": "src/background.js",
+    "type": "module"
+  },
   "commands": {
     "_execute_action": {
-      "suggested_key": { "default": "Alt+Shift+N", "mac": "Alt+Shift+N" },
+      "suggested_key": {
+        "default": "Alt+Shift+N",
+        "mac": "Alt+Shift+N"
+      },
       "description": "Open Web Notes"
     },
     "save-page": {
-      "suggested_key": { "default": "Alt+Shift+S", "mac": "MacCtrl+Shift+S" },
+      "suggested_key": {
+        "default": "Alt+Shift+S",
+        "mac": "MacCtrl+Shift+S"
+      },
       "description": "Save the current page to Web Notes"
     }
   },
   "content_scripts": [
-    { "matches": ["<all_urls>"], "js": ["src/content/widget.js"], "run_at": "document_idle" }
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "src/content/widget.js"
+      ],
+      "run_at": "document_idle"
+    }
   ],
   "web_accessible_resources": [
-    { "resources": ["src/lib/scope.js", "src/lib/model.js", "src/lib/storage.js", "src/content/widget.css", "src/app/app.html", "icons/32.png"], "matches": ["<all_urls>"] }
+    {
+      "resources": [
+        "src/lib/scope.js",
+        "src/lib/model.js",
+        "src/lib/storage.js",
+        "src/content/widget.css",
+        "src/app/app.html",
+        "icons/32.png"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
   ]
 }
