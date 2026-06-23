@@ -48,3 +48,5 @@ header .spacer { flex: 1; }
 :root[data-theme="dark"] { --indigo: #818cf8; --line: #3a3b40; --muted: #9ca3af; --bg: #1f2024; --fg: #e5e7eb; --chip-bg: #312e81; --chip-ro-bg: #374151; --danger: #f87171; --field-bg: #26272c; }
 .rail-heading { font-size: 11px; color: var(--muted); margin: 10px 6px 2px; letter-spacing: .04em; }
 .sync-hint { font-size: 12px; color: var(--muted); cursor: help; }
+.snackbar { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--fg); color: var(--bg); border-radius: 8px; padding: 8px 16px; font-size: 13px; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.3); z-index: 10; }
+.snackbar .btn { color: var(--bg); border-color: var(--bg); background: transparent; }

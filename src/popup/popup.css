@@ -42,3 +42,5 @@ button.del { background: none; border: none; cursor: pointer; }
   :root:not([data-theme="light"]) { --indigo: #818cf8; --line: #3a3b40; --muted: #9ca3af; --bg: #1f2024; --fg: #e5e7eb; --chip-bg: #312e81; --chip-ro-bg: #374151; --danger: #f87171; --field-bg: #26272c; }
 }
 :root[data-theme="dark"] { --indigo: #818cf8; --line: #3a3b40; --muted: #9ca3af; --bg: #1f2024; --fg: #e5e7eb; --chip-bg: #312e81; --chip-ro-bg: #374151; --danger: #f87171; --field-bg: #26272c; }
+.snackbar { position: fixed; left: 50%; bottom: 44px; transform: translateX(-50%); background: var(--fg); color: var(--bg); border-radius: 6px; padding: 6px 12px; font-size: 12px; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.3); z-index: 10; }
+.snackbar .link { color: var(--bg); text-decoration: underline; }

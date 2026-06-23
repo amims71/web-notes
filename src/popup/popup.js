@@ -43,6 +43,18 @@ function el(tag, props = {}, children = []) {
   return n;
 }
 
+let undoTimer = null;
+function showUndo(onUndo) {
+  let bar = document.getElementById("snackbar");
+  if (!bar) { bar = el("div", { id: "snackbar", className: "snackbar" }); document.body.append(bar); }
+  bar.replaceChildren(el("span", { textContent: "Deleted" }));
+  const btn = el("button", { className: "link", textContent: "Undo" });
+  btn.onclick = async () => { clearTimeout(undoTimer); bar.remove(); await onUndo(); };
+  bar.append(btn);
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(() => bar.remove(), 5000);
+}
+
 function toLocalInput(ms) {
   if (ms == null) return "";
   return new Date(ms - new Date(ms).getTimezoneOffset() * 60000).toISOString().slice(0, 16);
@@ -154,7 +166,18 @@ function itemRow(list, item) {
   row.append(toggle);
 
   const del = el("button", { className: "del", textContent: "✕", title: "Delete" });
-  del.onclick = async () => { list.items = list.items.filter((x) => x !== item); expanded.delete(item.id); await save(); };
+  del.onclick = async () => {
+    const idx = list.items.indexOf(item);
+    list.items = list.items.filter((x) => x !== item);
+    expanded.delete(item.id);
+    await save();
+    showUndo(async () => {
+      const l = bucket.lists.find((x) => x.id === list.id);
+      if (!l) return;
+      l.items.splice(Math.min(idx, l.items.length), 0, item);
+      await save();
+    });
+  };
   row.append(del);
 
   if (pendingEditId === item.id) { pendingEditId = null; requestAnimationFrame(() => editItem(text, item)); }
@@ -270,3 +293,4 @@ subscribe(async () => {
 });
 
 load();
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && scope?.kind === "web" && bucket) save(); });

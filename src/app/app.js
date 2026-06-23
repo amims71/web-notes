@@ -29,6 +29,18 @@ function download(filename, text, type) {
   URL.revokeObjectURL(url);
 }
 
+let undoTimer = null;
+function showUndo(onUndo) {
+  let bar = document.getElementById("snackbar");
+  if (!bar) { bar = el("div", { id: "snackbar", className: "snackbar" }); document.body.append(bar); }
+  bar.replaceChildren(el("span", { textContent: "Deleted" }));
+  const btn = el("button", { className: "btn", textContent: "Undo" });
+  btn.onclick = async () => { clearTimeout(undoTimer); bar.remove(); await onUndo(); };
+  bar.append(btn);
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(() => bar.remove(), 5000);
+}
+
 function toLocalInput(ms) {
   if (ms == null) return "";
   return new Date(ms - new Date(ms).getTimezoneOffset() * 60000).toISOString().slice(0, 16);
@@ -257,7 +269,19 @@ function renderItem(key, list, item) {
   row.append(toggle);
 
   const del = el("button", { className: "btn", textContent: "✕" });
-  del.onclick = async () => { list.items = list.items.filter((x) => x !== item); expanded.delete(item.id); await setDomain(key, b); };
+  del.onclick = async () => {
+    const idx = list.items.indexOf(item);
+    list.items = list.items.filter((x) => x !== item);
+    expanded.delete(item.id);
+    await setDomain(key, b);
+    showUndo(async () => {
+      const bk = state.domains[key];
+      const l = bk?.lists.find((x) => x.id === list.id);
+      if (!l) return;
+      l.items.splice(Math.min(idx, l.items.length), 0, item);
+      await setDomain(key, bk);
+    });
+  };
   row.append(del);
 
   row.ondragstart = (e) => {
