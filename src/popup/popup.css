@@ -30,3 +30,6 @@ button.del { background: none; border: none; cursor: pointer; }
 .link-input { flex: 1; padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px; font: inherit; }
 .note-input { flex: 1; padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px; font: inherit; resize: vertical; }
 .link.small { font-size: 11px; white-space: nowrap; }
+.due-flag { font-size: 11px; color: var(--muted); }
+.due-flag.overdue { color: #dc2626; font-weight: 600; }
+.due-input, .remind-input, .repeat-input { padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px; font: inherit; }

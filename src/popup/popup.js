@@ -1,5 +1,5 @@
 import { resolveScope } from "../lib/scope.js";
-import { makeDomainBucket, makeList, makeItem, nextOrder, isHttpUrl } from "../lib/model.js";
+import { makeDomainBucket, makeList, makeItem, nextOrder, isHttpUrl, dueState } from "../lib/model.js";
 import { getDomain, setDomain, subscribe } from "../lib/storage.js";
 
 let scope = null;
@@ -35,6 +35,19 @@ function el(tag, props = {}, children = []) {
   return n;
 }
 
+function toLocalInput(ms) {
+  if (ms == null) return "";
+  return new Date(ms - new Date(ms).getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
+function fromLocalInput(value) {
+  return value ? new Date(value).getTime() : null;
+}
+function formatDue(ms, now) {
+  const diff = ms - now, abs = Math.abs(diff), m = 60000, h = 3600000, d = 86400000;
+  const s = abs < h ? Math.max(1, Math.round(abs / m)) + "m" : abs < d ? Math.round(abs / h) + "h" : Math.round(abs / d) + "d";
+  return diff < 0 ? "overdue " + s : "in " + s;
+}
+
 function detailsPanel(item) {
   const panel = el("div", { className: "details" });
   panel.hidden = !expanded.has(item.id);
@@ -53,7 +66,31 @@ function detailsPanel(item) {
   note.onchange = async () => { item.note = note.value.trim() || null; item.updatedAt = Date.now(); await save(); };
   const noteRow = el("div", { className: "detail-row" }, [el("span", { className: "detail-label", textContent: "Notes" }), note]);
 
-  panel.append(linkRow, noteRow);
+  const dueInput = el("input", { type: "datetime-local", className: "due-input", value: toLocalInput(item.due) });
+  dueInput.onchange = async () => { item.due = fromLocalInput(dueInput.value); item.updatedAt = Date.now(); await save(); };
+  const clearDue = el("button", { className: "del", textContent: "✕", title: "Clear due date" });
+  clearDue.onclick = async () => { item.due = null; item.updatedAt = Date.now(); await save(); };
+  const dueRow = el("div", { className: "detail-row" }, [el("span", { className: "detail-label", textContent: "Due" }), dueInput, clearDue]);
+
+  const remind = el("select", { className: "remind-input" });
+  for (const [label, mins] of [["At time", 0], ["5 min before", 5], ["30 min before", 30], ["1 hour before", 60], ["1 day before", 1440]]) {
+    const o = el("option", { value: String(mins), textContent: label });
+    if ((item.remindLead || 0) === mins) o.selected = true;
+    remind.append(o);
+  }
+  remind.onchange = async () => { item.remindLead = Number(remind.value); item.updatedAt = Date.now(); await save(); };
+  const remindRow = el("div", { className: "detail-row" }, [el("span", { className: "detail-label", textContent: "Remind" }), remind]);
+
+  const repeat = el("select", { className: "repeat-input" });
+  for (const [label, val] of [["No repeat", ""], ["Daily", "daily"], ["Weekly", "weekly"]]) {
+    const o = el("option", { value: val, textContent: label });
+    if ((item.repeat || "") === val) o.selected = true;
+    repeat.append(o);
+  }
+  repeat.onchange = async () => { item.repeat = repeat.value || null; item.updatedAt = Date.now(); await save(); };
+  const repeatRow = el("div", { className: "detail-row" }, [el("span", { className: "detail-label", textContent: "Repeat" }), repeat]);
+
+  panel.append(linkRow, noteRow, dueRow, remindRow, repeatRow);
   return panel;
 }
 
@@ -68,6 +105,11 @@ function itemRow(list, item) {
   const row = el("div", { className: "item" + (item.done ? " done" : "") }, [cb, text]);
   if (isHttpUrl(item.url)) row.append(el("a", { href: item.url, target: "_blank", textContent: "🔗", title: item.url }));
   if (item.note) row.append(el("span", { className: "has-note", textContent: "📝", title: "Has notes" }));
+  if (item.due != null) {
+    const flag = el("span", { className: "due-flag" + (dueState(item, Date.now()) === "overdue" ? " overdue" : ""), textContent: "📅 " + formatDue(item.due, Date.now()) });
+    flag.title = new Date(item.due).toLocaleString();
+    row.append(flag);
+  }
 
   const panel = detailsPanel(item);
   const toggle = el("button", { className: "disclosure", textContent: expanded.has(item.id) ? "▾" : "▸", title: "Details" });
