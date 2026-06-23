@@ -21,3 +21,12 @@ footer { border-bottom: none; border-top: 1px solid var(--line); position: stick
 .empty { padding: 16px 10px; color: var(--muted); text-align: center; }
 h2 { font-size: 12px; margin: 8px 10px 2px; color: var(--muted); }
 button.del { background: none; border: none; cursor: pointer; }
+.disclosure { background: none; border: none; cursor: pointer; color: var(--muted); padding: 0 2px; }
+.has-note { font-size: 11px; }
+.item-wrap { border-bottom: none; }
+.details { padding: 4px 0 6px 22px; }
+.detail-row { display: flex; align-items: flex-start; gap: 6px; margin: 3px 0; }
+.detail-label { width: 36px; color: var(--muted); font-size: 11px; padding-top: 3px; }
+.link-input { flex: 1; padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px; font: inherit; }
+.note-input { flex: 1; padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px; font: inherit; resize: vertical; }
+.link.small { font-size: 11px; white-space: nowrap; }

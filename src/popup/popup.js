@@ -4,6 +4,8 @@ import { getDomain, setDomain, subscribe } from "../lib/storage.js";
 
 let scope = null;
 let bucket = null;
+const expanded = new Set();
+let pendingEditId = null;
 
 const $ = (id) => document.getElementById(id);
 
@@ -13,6 +15,7 @@ async function load() {
   if (scope.kind !== "web") {
     $("domain").textContent = "No site";
     $("lists").innerHTML = '<div class="empty">Open a website to take notes here.</div>';
+    $("save-page").hidden = true;
     $("new-list").hidden = true;
     $("widget-toggle").closest("label").hidden = true;
     return;
@@ -32,28 +35,56 @@ function el(tag, props = {}, children = []) {
   return n;
 }
 
+function detailsPanel(item) {
+  const panel = el("div", { className: "details" });
+  panel.hidden = !expanded.has(item.id);
+
+  const link = el("input", { type: "text", className: "link-input", value: item.url ?? "", placeholder: "https://…" });
+  link.oninput = () => { item.url = link.value.trim() || null; };
+  link.onchange = async () => { item.url = link.value.trim() || null; item.updatedAt = Date.now(); await save(); };
+  const use = el("button", { className: "link small", textContent: "Use this page", title: "Use the current page URL" });
+  use.onclick = async () => { item.url = scope.pageUrl; item.updatedAt = Date.now(); await save(); };
+  const clearLink = el("button", { className: "del", textContent: "✕", title: "Clear link" });
+  clearLink.onclick = async () => { item.url = null; item.updatedAt = Date.now(); await save(); };
+  const linkRow = el("div", { className: "detail-row" }, [el("span", { className: "detail-label", textContent: "Link" }), link, use, clearLink]);
+
+  const note = el("textarea", { className: "note-input", value: item.note ?? "", placeholder: "Notes…", rows: 2 });
+  note.oninput = () => { item.note = note.value.trim() || null; };
+  note.onchange = async () => { item.note = note.value.trim() || null; item.updatedAt = Date.now(); await save(); };
+  const noteRow = el("div", { className: "detail-row" }, [el("span", { className: "detail-label", textContent: "Notes" }), note]);
+
+  panel.append(linkRow, noteRow);
+  return panel;
+}
+
 function itemRow(list, item) {
   const cb = el("input", { type: "checkbox", checked: item.done });
-  cb.onchange = async () => {
-    item.done = cb.checked;
-    item.updatedAt = Date.now();
-    await save();
-  };
+  cb.onchange = async () => { item.done = cb.checked; item.updatedAt = Date.now(); await save(); };
+
   const text = el("span", { className: "text", textContent: item.text });
   text.title = "Double-click to edit";
   text.ondblclick = () => editItem(text, item);
+
   const row = el("div", { className: "item" + (item.done ? " done" : "") }, [cb, text]);
-  if (isHttpUrl(item.url)) {
-    const a = el("a", { href: item.url, target: "_blank", textContent: "🔗", title: item.url });
-    row.append(a);
-  }
-  const del = el("button", { className: "del", textContent: "✕", title: "Delete" });
-  del.onclick = async () => {
-    list.items = list.items.filter((x) => x !== item);
-    await save();
+  if (isHttpUrl(item.url)) row.append(el("a", { href: item.url, target: "_blank", textContent: "🔗", title: item.url }));
+  if (item.note) row.append(el("span", { className: "has-note", textContent: "📝", title: "Has notes" }));
+
+  const panel = detailsPanel(item);
+  const toggle = el("button", { className: "disclosure", textContent: expanded.has(item.id) ? "▾" : "▸", title: "Details" });
+  toggle.onclick = () => {
+    const open = !expanded.has(item.id);
+    open ? expanded.add(item.id) : expanded.delete(item.id);
+    panel.hidden = !open;
+    toggle.textContent = open ? "▾" : "▸";
   };
+  row.append(toggle);
+
+  const del = el("button", { className: "del", textContent: "✕", title: "Delete" });
+  del.onclick = async () => { list.items = list.items.filter((x) => x !== item); expanded.delete(item.id); await save(); };
   row.append(del);
-  return row;
+
+  if (pendingEditId === item.id) { pendingEditId = null; requestAnimationFrame(() => editItem(text, item)); }
+  return el("div", { className: "item-wrap" }, [row, panel]);
 }
 
 function editItem(textEl, item) {
@@ -121,6 +152,16 @@ function renderPageSection() {
   box.innerHTML = "";
   for (const { list, item } of pageItems) box.append(itemRow(list, item));
 }
+
+$("save-page").onclick = async () => {
+  if (scope?.kind !== "web") return;
+  let list = [...bucket.lists].sort((a, b) => a.order - b.order)[0];
+  if (!list) { list = makeList("Notes"); list.order = nextOrder(bucket.lists); bucket.lists.push(list); }
+  const item = makeItem({ url: scope.pageUrl, order: nextOrder(list.items) });
+  list.items.push(item);
+  pendingEditId = item.id;
+  await save();
+};
 
 $("new-list").onclick = async () => {
   const name = prompt("New list name:");
