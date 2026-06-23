@@ -9,3 +9,6 @@
 .add { width: 100%; border: none; border-top: 1px solid #e5e7eb; padding: 8px 10px; font: inherit; }
 .add:focus { outline: 2px solid #4f46e5; outline-offset: -2px; }
 .more { display: block; text-align: center; padding: 6px; color: #4f46e5; cursor: pointer; border-top: 1px solid #e5e7eb; }
+.flag { font-size: 11px; text-decoration: none; color: inherit; }
+.due { color: #6b7280; }
+.due.overdue { color: #dc2626; font-weight: 600; }

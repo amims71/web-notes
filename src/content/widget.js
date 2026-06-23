@@ -4,7 +4,7 @@
   const scope = resolveScope(location.href);
   if (scope.kind !== "web") return;
 
-  const { makeItem, nextOrder, countOpenItems } = await import(base("src/lib/model.js"));
+  const { makeItem, nextOrder, countOpenItems, isHttpUrl, dueState } = await import(base("src/lib/model.js"));
   const { getDomain, setDomain, subscribe } = await import(base("src/lib/storage.js"));
 
   const host = document.createElement("div");
@@ -20,6 +20,12 @@
   let corner = { right: "16px", bottom: "16px" };
   let expanded = false;
   let bucket = null;
+
+  function formatDue(ms, now) {
+    const diff = ms - now, abs = Math.abs(diff), m = 60000, h = 3600000, d = 86400000;
+    const s = abs < h ? Math.max(1, Math.round(abs / m)) + "m" : abs < d ? Math.round(abs / h) + "h" : Math.round(abs / d) + "d";
+    return diff < 0 ? "overdue " + s : "in " + s;
+  }
 
   function placement() {
     Object.assign(container.style, { right: corner.right, bottom: corner.bottom, left: "auto", top: "auto" });
@@ -82,6 +88,29 @@
       t.className = "t";
       t.textContent = item.text;
       row.append(cb, t);
+      if (isHttpUrl(item.url)) {
+        const a = document.createElement("a");
+        a.className = "flag link";
+        a.href = item.url;
+        a.target = "_blank";
+        a.textContent = "🔗";
+        a.title = item.url;
+        row.append(a);
+      }
+      if (item.note) {
+        const n = document.createElement("span");
+        n.className = "flag";
+        n.textContent = "📝";
+        n.title = "Has notes";
+        row.append(n);
+      }
+      if (item.due != null) {
+        const dueEl = document.createElement("span");
+        dueEl.className = "flag due" + (dueState(item, Date.now()) === "overdue" ? " overdue" : "");
+        dueEl.textContent = "📅 " + formatDue(item.due, Date.now());
+        dueEl.title = new Date(item.due).toLocaleString();
+        row.append(dueEl);
+      }
       panel.append(row);
     }
 
