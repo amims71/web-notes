@@ -16,6 +16,10 @@ belongs.
   **lead time** (e.g. 30 min before), and optional **daily/weekly repeat**. A
   background alarm fires a **system notification** (click → opens the item's
   link); overdue items are flagged in red.
+- **Tags, sort & archive** — tag items (free-form `#chips`), filter by tag in the
+  full app's left rail, **sort** lists (manual / due / created / alphabetical), and
+  **archive** items non-destructively (hidden from views and counts; restore them
+  from the Archived view).
 - **Capture from anywhere** — right-click **selected text, the page, or a link**
   → *Add to Web Notes*, landing in that domain's auto-created **Inbox** list.
 - **Keyboard shortcuts** — open the popup (`Alt+Shift+N`) or save the current
