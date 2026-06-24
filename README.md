@@ -3,9 +3,20 @@
 A Chromium (Manifest V3) browser extension for keeping notes, todos, and lists
 **scoped per website domain** — all stored locally, no account, no backend.
 
-Keep Jira notes on Jira, GitHub todos on GitHub, a "to download" and a "to seed"
-list on a torrent site, replies to send on Slack — each surfaces only where it
-belongs.
+Keep a follow-up note on a CRM account, a list of prospects to message on
+LinkedIn, tickets to chase in your helpdesk, replies you owe in Gmail or Slack —
+each surfaces only on the site it belongs to.
+
+## Use it for
+
+- **Sales & marketing** — follow-ups in your **CRM**, prospects to message on
+  **LinkedIn**, campaigns and budgets to review in **Ads Manager**, anomalies to
+  dig into on an **analytics dashboard**, replies you owe in **Gmail**.
+- **Support engineering** — **"Waiting on customer"** and **"Escalations"** lists
+  in your **helpdesk**, alerts to investigate on a **monitoring dashboard**, bugs
+  to reproduce in your **issue tracker**, threads to circle back on in **Slack**.
+- **Anywhere** — pin a note to a whole domain or to one exact page (e.g. a
+  specific ticket, account, or deal), so it shows up right when you land there.
 
 ## Features
 
