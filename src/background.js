@@ -5,13 +5,13 @@ import { getDomain, setDomain, getAllDomains, getMeta, setMeta } from "./lib/sto
 async function updateBadgeForTab(tab) {
   if (!tab || !tab.url) return;
   const scope = resolveScope(tab.url);
-  if (scope.kind !== "web") {
-    await chrome.action.setBadgeText({ text: "", tabId: tab.id });
-    return;
+  let text = "";
+  if (scope.kind === "web") {
+    const count = countOpenItems(await getDomain(scope.key), { pageUrl: scope.pageUrl });
+    text = count ? String(count) : "";
   }
-  const bucket = await getDomain(scope.key);
-  const count = countOpenItems(bucket, { pageUrl: scope.pageUrl });
-  await chrome.action.setBadgeText({ text: count ? String(count) : "", tabId: tab.id });
+  // The tab can close between read and write; ignore the resulting "no tab" error.
+  try { await chrome.action.setBadgeText({ text, tabId: tab.id }); } catch {}
 }
 
 async function refreshActiveTab() {
@@ -32,8 +32,8 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 chrome.tabs.onActivated.addListener(async ({ tabId }) => {
-  const tab = await chrome.tabs.get(tabId);
-  await updateBadgeForTab(tab);
+  const tab = await chrome.tabs.get(tabId).catch(() => null);
+  if (tab) await updateBadgeForTab(tab);
 });
 
 chrome.tabs.onUpdated.addListener(async (tabId, info, tab) => {
