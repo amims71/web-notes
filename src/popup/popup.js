@@ -31,6 +31,9 @@ async function load() {
   $("domain").textContent = scope.domain;
   bucket = (await getDomain(scope.key)) ?? makeDomainBucket(scope.domain);
   render();
+  const q = $("quick-add");
+  q.hidden = false;
+  q.focus();
 }
 
 async function save() {
@@ -259,6 +262,18 @@ $("save-page").onclick = async () => {
   list.items.push(item);
   pendingEditId = item.id;
   await save();
+};
+
+$("quick-add").onkeydown = async (e) => {
+  if (e.key === "Escape") { window.close(); return; }
+  if (e.key !== "Enter") return;
+  const text = e.target.value.trim();
+  if (scope?.kind !== "web" || !bucket || !text) { window.close(); return; }
+  let list = [...bucket.lists].sort((a, b) => a.order - b.order)[0];
+  if (!list) { list = makeList("Notes"); list.order = nextOrder(bucket.lists); bucket.lists.push(list); }
+  list.items.push(makeItem({ text, order: nextOrder(list.items) }));
+  await save();
+  window.close();
 };
 
 $("new-list").onclick = async () => {

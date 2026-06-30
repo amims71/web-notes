@@ -33,6 +33,9 @@ button.del { background: none; border: none; cursor: pointer; }
 .due-flag { font-size: 11px; color: var(--muted); }
 .due-flag.overdue { color: var(--danger); font-weight: 600; }
 .due-input, .remind-input, .repeat-input { padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px; font: inherit; background: var(--field-bg); color: var(--fg); }
+.quick-add { width: 100%; box-sizing: border-box; border: none; border-bottom: 1px solid var(--line); background: var(--field-bg); color: var(--fg); font: inherit; font-size: 14px; padding: 11px 14px; }
+.quick-add::placeholder { color: var(--muted); }
+.quick-add:focus { outline: none; border-bottom: 2px solid var(--indigo); padding-bottom: 10px; }
 .tags-edit { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; align-items: center; }
 .tag-chip { background: var(--chip-bg); color: var(--indigo); border-radius: 10px; padding: 1px 7px; font-size: 11px; display: inline-flex; align-items: center; gap: 3px; }
 .tag-chip.ro { background: var(--chip-ro-bg); color: var(--muted); }
