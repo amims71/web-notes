@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Web Notes — notes that remember where they belong</title>
+<meta name="description" content="A local-first Chrome extension that pins notes, to-dos, and lists to the website itself — per domain. No account, no cloud.">
+<meta property="og:title" content="Web Notes">
+<meta property="og:description" content="Per-site to-dos for your CRM, helpdesk, inbox and more — local-first, no cloud.">
+<meta name="theme-color" content="#121128">
+<link rel="icon" href="icon.png">
+</head>
+<body>
+<style>
+  :root {
+    --ink: #121128;
+    --ink-raise: #1b1940;
+    --ink-2: #232049;
+    --iris: #8079ff;
+    --iris-soft: #b3aeff;
+    --paper: #f5efe2;
+    --paper-2: #efe7d4;
+    --graphite: #2c2942;
+    --mist: #a6a1cb;
+    --mist-dim: #6f6b96;
+    --mint: #5fd3a3;
+    --amber: #ffcf5c;
+    --line: rgba(255,255,255,.09);
+    --line-soft: rgba(255,255,255,.05);
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo, Consolas, monospace;
+    --maxw: 1120px;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--ink);
+    color: var(--mist);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  /* ambient glow */
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(60% 50% at 78% -5%, rgba(128,121,255,.20), transparent 70%),
+      radial-gradient(45% 40% at 0% 100%, rgba(95,211,163,.08), transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+  a { color: inherit; }
+  h1, h2, h3 { font-family: var(--serif); color: #fff; font-weight: 600; text-wrap: balance; letter-spacing: -.01em; margin: 0; }
+  p { margin: 0; }
+  .eyebrow {
+    font-family: var(--mono); font-size: .72rem; letter-spacing: .22em; text-transform: uppercase;
+    color: var(--iris-soft); display: inline-flex; align-items: center; gap: 8px;
+  }
+  .eyebrow::before { content: ""; width: 22px; height: 1px; background: var(--iris); display: inline-block; }
+
+  /* ---------- browser chrome top bar ---------- */
+  .chrome {
+    position: sticky; top: 0; z-index: 40;
+    background: rgba(18,17,40,.78);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--line);
+  }
+  .chrome-in { max-width: var(--maxw); margin: 0 auto; padding: 9px 24px; display: flex; align-items: center; gap: 14px; }
+  .dots { display: flex; gap: 7px; }
+  .dots i { width: 11px; height: 11px; border-radius: 50%; background: var(--ink-2); display: block; }
+  .dots i:nth-child(1) { background: #ff6f6f; } .dots i:nth-child(2) { background: var(--amber); } .dots i:nth-child(3) { background: var(--mint); }
+  .addr {
+    flex: 1; display: flex; align-items: center; gap: 9px; min-width: 0;
+    background: var(--ink-raise); border: 1px solid var(--line);
+    border-radius: 9px; padding: 7px 12px; font-family: var(--mono); font-size: .82rem; color: var(--mist);
+  }
+  .addr .lock { color: var(--mint); flex: none; }
+  .addr .url { color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .addr .url b { color: var(--iris-soft); font-weight: 600; }
+  .addr .badge {
+    margin-left: auto; flex: none; font-size: .68rem; background: var(--iris); color: #0c0b1f;
+    font-weight: 700; border-radius: 6px; padding: 1px 7px;
+  }
+  .nav-cta {
+    flex: none; font-family: var(--mono); font-size: .76rem; text-decoration: none;
+    border: 1px solid var(--iris); color: #fff; border-radius: 8px; padding: 7px 13px;
+    background: linear-gradient(180deg, rgba(128,121,255,.25), rgba(128,121,255,.08));
+    transition: background .2s, transform .2s;
+  }
+  .nav-cta:hover { background: var(--iris); color: #0c0b1f; transform: translateY(-1px); }
+
+  /* ---------- hero ---------- */
+  .hero { padding: clamp(48px, 9vw, 104px) 0 64px; }
+  .hero-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 56px; align-items: center; }
+  .hero h1 { font-size: clamp(2.5rem, 5.4vw, 4.6rem); line-height: 1.02; margin: 22px 0 0; }
+  .hero h1 .mark { color: var(--iris-soft); font-style: italic; }
+  .lede { font-size: clamp(1.05rem, 1.6vw, 1.28rem); color: var(--mist); margin-top: 22px; max-width: 30ch; }
+  .cta-row { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; align-items: center; }
+  .btn {
+    font-family: var(--sans); font-weight: 600; font-size: .98rem; text-decoration: none;
+    border-radius: 11px; padding: 13px 22px; display: inline-flex; align-items: center; gap: 9px;
+    transition: transform .18s, box-shadow .25s, background .2s; cursor: pointer; border: 0;
+  }
+  .btn-primary { background: var(--iris); color: #0c0b1f; box-shadow: 0 10px 30px -10px rgba(128,121,255,.7); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 16px 40px -10px rgba(128,121,255,.85); }
+  .btn-ghost { background: transparent; color: #fff; border: 1px solid var(--line); }
+  .btn-ghost:hover { border-color: var(--iris); background: rgba(128,121,255,.08); }
+  .meta-line { margin-top: 22px; font-family: var(--mono); font-size: .76rem; color: var(--mist-dim); display: flex; gap: 16px; flex-wrap: wrap; }
+  .meta-line b { color: var(--mist); font-weight: 600; }
+
+  /* hero scene: a faux site with the widget pinned + paper notes */
+  .scene { position: relative; aspect-ratio: 4/3.4; }
+  .site {
+    position: absolute; inset: 0; border-radius: 16px; overflow: hidden;
+    background:
+      linear-gradient(180deg, var(--ink-raise), var(--ink));
+    border: 1px solid var(--line); box-shadow: 0 40px 80px -30px rgba(0,0,0,.7);
+  }
+  .site-top { height: 42px; border-bottom: 1px solid var(--line-soft); display: flex; align-items: center; gap: 8px; padding: 0 14px; }
+  .site-top .sdot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-2); }
+  .site-top .sbar { flex: 1; height: 14px; border-radius: 7px; background: var(--ink-2); max-width: 180px; }
+  .site-body { padding: 20px; display: grid; gap: 13px; opacity: .55; }
+  .skel { height: 11px; border-radius: 6px; background: var(--ink-2); }
+  .skel.w-70 { width: 70%; } .skel.w-90 { width: 90%; } .skel.w-50 { width: 50%; } .skel.w-40 { width: 40%; }
+  .skel.tall { height: 64px; margin-top: 6px; }
+  .skel.row { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; background: none; height: auto; }
+
+  /* the floating widget mock */
+  .widget {
+    position: absolute; right: 18px; bottom: 18px; width: 230px;
+    background: var(--paper); color: var(--graphite); border-radius: 13px;
+    box-shadow: 0 24px 50px -16px rgba(0,0,0,.6); overflow: hidden; z-index: 5;
+    font-size: 13.5px;
+  }
+  .widget-head { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; border-bottom: 1px solid rgba(0,0,0,.08); font-weight: 700; font-family: var(--mono); font-size: .76rem; }
+  .widget-head span:last-child { color: var(--mist-dim); }
+  .witem { display: flex; align-items: center; gap: 9px; padding: 7px 12px; }
+  .witem + .witem { border-top: 1px solid rgba(0,0,0,.05); }
+  .chk { width: 15px; height: 15px; border-radius: 4px; border: 1.5px solid #b9b1c9; flex: none; position: relative; }
+  .chk.done { background: var(--mint); border-color: var(--mint); }
+  .chk.done::after { content: "✓"; position: absolute; inset: -2px 0 0; color: #0c2a1e; font-size: 12px; text-align: center; font-weight: 700; }
+  .witem .wt { flex: 1; }
+  .witem.done .wt { text-decoration: line-through; color: #9a93a8; }
+  .pin { font-size: 11px; color: var(--iris); }
+
+  /* paper sticky notes */
+  .note {
+    position: absolute; width: 168px; background: var(--paper); color: var(--graphite);
+    border-radius: 4px; padding: 13px 14px 15px; font-size: 13.5px; line-height: 1.45;
+    box-shadow: 0 18px 36px -14px rgba(0,0,0,.55); z-index: 6;
+  }
+  .note .tape { position: absolute; top: -9px; left: 50%; transform: translateX(-50%) rotate(-2deg); width: 56px; height: 18px; background: rgba(128,121,255,.4); border: 1px solid rgba(128,121,255,.5); border-radius: 2px; backdrop-filter: blur(2px); }
+  .note .k { font-family: var(--mono); font-size: .64rem; letter-spacing: .14em; text-transform: uppercase; color: var(--mist-dim); display: block; margin-bottom: 5px; }
+  .note.n1 { top: -14px; left: -16px; transform: rotate(-5deg); }
+  .note.n2 { top: 120px; left: -34px; transform: rotate(4deg); z-index: 7; }
+  .note.drag { cursor: grab; touch-action: none; }
+  .note.drag:active { cursor: grabbing; }
+  .float { animation: float 6s ease-in-out infinite; }
+  @keyframes float { 0%,100% { transform: translateY(0) rotate(-5deg); } 50% { transform: translateY(-9px) rotate(-5deg); } }
+
+  /* ---------- generic section ---------- */
+  section { padding: clamp(56px, 8vw, 96px) 0; position: relative; }
+  .sec-head { max-width: 56ch; }
+  .sec-head h2 { font-size: clamp(1.9rem, 3.4vw, 2.9rem); margin-top: 16px; line-height: 1.08; }
+  .sec-head p { margin-top: 16px; color: var(--mist); font-size: 1.08rem; }
+  .rule { height: 1px; background: linear-gradient(90deg, var(--line), transparent); }
+
+  /* per-domain cards */
+  .domains { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 46px; }
+  .dcard {
+    background: linear-gradient(180deg, var(--ink-raise), rgba(27,25,64,.4));
+    border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 14px;
+    transition: transform .25s, border-color .25s;
+  }
+  .dcard:hover { transform: translateY(-4px); border-color: rgba(128,121,255,.45); }
+  .durl { font-family: var(--mono); font-size: .8rem; color: #fff; display: flex; align-items: center; gap: 7px; }
+  .durl .lock { color: var(--mint); }
+  .dlist { display: grid; gap: 9px; }
+  .dlistname { font-family: var(--mono); font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; color: var(--iris-soft); }
+  .ditem { display: flex; align-items: center; gap: 9px; font-size: .94rem; color: var(--mist); }
+  .ditem .chk { width: 14px; height: 14px; border-color: var(--mist-dim); }
+  .tagrow { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+  .tag { font-family: var(--mono); font-size: .68rem; color: var(--iris-soft); background: rgba(128,121,255,.14); border-radius: 20px; padding: 2px 9px; }
+
+  /* surfaces */
+  .surfaces { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 46px; align-items: start; }
+  .surf { background: var(--ink-raise); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .surf-cap { padding: 16px 18px; border-top: 1px solid var(--line-soft); }
+  .surf-cap h3 { font-size: 1.2rem; }
+  .surf-cap p { margin-top: 6px; font-size: .92rem; color: var(--mist); }
+  .surf-art { background: linear-gradient(180deg, #14132c, #100f24); padding: 18px; min-height: 200px; display: flex; align-items: center; justify-content: center; }
+
+  /* mini popup mock */
+  .popup { width: 100%; max-width: 230px; background: var(--paper); color: var(--graphite); border-radius: 11px; overflow: hidden; box-shadow: 0 20px 40px -16px rgba(0,0,0,.6); font-size: 13px; }
+  .popup-head { display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; font-family: var(--mono); font-size: .74rem; font-weight: 700; border-bottom: 1px solid rgba(0,0,0,.08); }
+  .popup-head .all { color: var(--iris); }
+  .listhead { display: flex; align-items: center; gap: 6px; padding: 8px 12px 4px; font-weight: 700; font-size: .82rem; }
+  .listhead .cnt { margin-left: auto; font-family: var(--mono); font-size: .7rem; color: var(--mist-dim); font-weight: 500; }
+
+  /* full app mock */
+  .appmock { width: 100%; display: grid; grid-template-columns: 64px 1fr; gap: 0; background: var(--paper); border-radius: 10px; overflow: hidden; color: var(--graphite); box-shadow: 0 20px 40px -16px rgba(0,0,0,.6); font-size: 11px; }
+  .appmock .rail { background: var(--paper-2); padding: 10px 8px; display: grid; gap: 7px; align-content: start; }
+  .appmock .rail i { display: block; height: 7px; border-radius: 4px; background: #d8cfbb; }
+  .appmock .rail i.on { background: var(--iris); }
+  .appmock .main { padding: 11px; display: grid; gap: 7px; align-content: start; }
+  .appmock .h { height: 8px; width: 40%; border-radius: 4px; background: #cabfa6; }
+  .appmock .r { display: flex; align-items: center; gap: 6px; }
+  .appmock .r .b { height: 6px; border-radius: 3px; background: #d8cfbb; flex: 1; }
+
+  /* icon bubble (CSS rendition of the official checklist icon) */
+  .bubble-ico { width: 42px; height: 42px; border-radius: 11px; background: linear-gradient(160deg, #8f88ff, var(--iris)); display: grid; place-items: center; box-shadow: 0 8px 22px -6px rgba(128,121,255,.7); }
+  .bubble-ico svg { width: 26px; height: 26px; }
+
+  /* feature grid */
+  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-top: 46px; background: var(--line); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+  .feat { background: var(--ink); padding: 26px 24px; display: flex; flex-direction: column; gap: 10px; transition: background .25s; }
+  .feat:hover { background: var(--ink-raise); }
+  .feat .fi { width: 34px; height: 34px; color: var(--iris); }
+  .feat h3 { font-size: 1.18rem; }
+  .feat p { font-size: .95rem; color: var(--mist); }
+
+  /* install */
+  .install-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-top: 44px; align-items: start; }
+  .steps { display: grid; gap: 4px; counter-reset: s; }
+  .step { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: baseline; padding: 16px 0; border-top: 1px solid var(--line-soft); }
+  .step:first-child { border-top: 0; }
+  .step .n { counter-increment: s; font-family: var(--mono); color: var(--iris-soft); font-size: .9rem; }
+  .step .n::before { content: counter(s, decimal-leading-zero); }
+  .step b { color: #fff; font-weight: 600; }
+  .step code { font-family: var(--mono); font-size: .85em; background: var(--ink-raise); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; color: var(--iris-soft); }
+  .codecard { background: #0d0c20; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .codecard .cc-top { display: flex; align-items: center; gap: 8px; padding: 11px 14px; border-bottom: 1px solid var(--line-soft); font-family: var(--mono); font-size: .72rem; color: var(--mist-dim); }
+  .codecard pre { margin: 0; padding: 16px 18px; font-family: var(--mono); font-size: .82rem; line-height: 1.8; color: var(--mist); overflow-x: auto; }
+  .codecard .cmt { color: var(--mist-dim); }
+  .codecard .ok { color: var(--mint); }
+
+  footer { border-top: 1px solid var(--line); padding: 40px 0 56px; }
+  .foot { display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .foot .brand { display: flex; align-items: center; gap: 12px; font-family: var(--serif); color: #fff; font-size: 1.2rem; }
+  .foot .links { display: flex; gap: 22px; font-family: var(--mono); font-size: .8rem; }
+  .foot a { text-decoration: none; color: var(--mist); }
+  .foot a:hover { color: var(--iris-soft); }
+  .foot .fineprint { font-family: var(--mono); font-size: .72rem; color: var(--mist-dim); margin-top: 18px; }
+
+  .reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+
+  :focus-visible { outline: 2px solid var(--iris-soft); outline-offset: 3px; border-radius: 4px; }
+
+  @media (max-width: 860px) {
+    .hero-grid, .install-grid { grid-template-columns: 1fr; gap: 40px; }
+    .domains, .surfaces, .features { grid-template-columns: 1fr; }
+    .features { border-radius: 14px; }
+    .scene { max-width: 420px; margin: 8px auto 0; }
+    .nav-cta { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .float { animation: none; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+  }
+</style>
+
+<header class="chrome">
+  <div class="chrome-in">
+    <div class="dots"><i></i><i></i><i></i></div>
+    <div class="addr">
+      <span class="lock">●</span>
+      <span class="url" id="addr-url">app.<b>your-crm</b>.com/accounts</span>
+      <span class="badge" id="addr-badge">3</span>
+    </div>
+    <a class="nav-cta" href="#install">+ Add to Chrome</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <div class="hero-grid">
+        <div>
+          <span class="eyebrow">Local-first browser extension</span>
+          <h1>Notes that remember <span class="mark">where they belong.</span></h1>
+          <p class="lede">Web Notes pins to-dos, notes, and lists to the website itself — so the thing you meant to do is waiting for you when you land on the page.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="#install">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 21h14"/></svg>
+              Install — it's free
+            </a>
+            <a class="btn btn-ghost" href="https://github.com/amims71/web-notes">View source</a>
+          </div>
+          <div class="meta-line">
+            <span><b>0</b> accounts · no cloud</span>
+            <span><b>52</b> tests</span>
+            <span><b>MIT</b> licensed</span>
+          </div>
+        </div>
+
+        <div class="scene" aria-hidden="true">
+          <div class="note n1 drag"><span class="k">Reminder</span>Send the renewal quote before EOD.</div>
+          <div class="site">
+            <div class="site-top"><span class="sdot"></span><span class="sdot"></span><span class="sdot"></span><span class="sbar"></span></div>
+            <div class="site-body">
+              <div class="skel w-50"></div>
+              <div class="skel w-90"></div>
+              <div class="skel w-70"></div>
+              <div class="skel tall"></div>
+              <div class="skel row"><div class="skel" style="height:48px"></div><div class="skel" style="height:48px"></div></div>
+              <div class="skel w-40"></div>
+            </div>
+            <div class="widget">
+              <div class="widget-head"><span>your-crm.com</span><span>2 open</span></div>
+              <div class="witem"><span class="chk"></span><span class="wt">Reply to Dana re: pricing</span><span class="pin">🔗</span></div>
+              <div class="witem"><span class="chk"></span><span class="wt">Log the discovery call</span></div>
+              <div class="witem done"><span class="chk done"></span><span class="wt">Send proposal</span></div>
+            </div>
+          </div>
+          <div class="note n2 float"><span class="k">This page · Acct #4471</span>Waiting on signed MSA — nudge Thu.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap"><div class="rule"></div></div>
+
+  <section data-domain="help.<b>acme</b>.io/tickets" data-badge="5">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">One idea</span>
+        <h2>Every site gets its own memory.</h2>
+        <p>Open a tool and you see only what belongs there — a list for your CRM, an escalations queue in your helpdesk, prospects to message on LinkedIn. Nothing bleeds between tabs.</p>
+      </div>
+      <div class="domains">
+        <div class="dcard reveal">
+          <div class="durl"><span class="lock">●</span>app.your-crm.com</div>
+          <div class="dlist">
+            <span class="dlistname">Follow up this week</span>
+            <div class="ditem"><span class="chk"></span> Renewal quote → Dana</div>
+            <div class="ditem"><span class="chk"></span> Re-engage cold lead</div>
+            <span class="dlistname" style="margin-top:6px">Proposals out</span>
+            <div class="ditem"><span class="chk"></span> Northwind — due Fri</div>
+          </div>
+          <div class="tagrow"><span class="tag">#followup</span><span class="tag">#q3</span></div>
+        </div>
+        <div class="dcard reveal">
+          <div class="durl"><span class="lock">●</span>help.acme.io</div>
+          <div class="dlist">
+            <span class="dlistname">Escalations</span>
+            <div class="ditem"><span class="chk"></span> #8821 — needs repro steps</div>
+            <div class="ditem"><span class="chk"></span> #8830 — SLA at 2h</div>
+            <span class="dlistname" style="margin-top:6px">Waiting on customer</span>
+            <div class="ditem"><span class="chk"></span> #8799 — logs requested</div>
+          </div>
+          <div class="tagrow"><span class="tag">#escalation</span><span class="tag">#sla</span></div>
+        </div>
+        <div class="dcard reveal">
+          <div class="durl"><span class="lock">●</span>linkedin.com</div>
+          <div class="dlist">
+            <span class="dlistname">Outreach</span>
+            <div class="ditem"><span class="chk"></span> Message 5 ops leads</div>
+            <div class="ditem"><span class="chk"></span> Reply to Priya's intro</div>
+            <span class="dlistname" style="margin-top:6px">Follow up</span>
+            <div class="ditem"><span class="chk"></span> Connected w/ Marcus — DM</div>
+          </div>
+          <div class="tagrow"><span class="tag">#outreach</span><span class="tag">#reply</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-domain="github.com/<b>your-team</b>" data-badge="4">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">Three places it shows up</span>
+        <h2>Glance, capture, or get the full picture.</h2>
+        <p>The same notes, surfaced however you're working — a quick popup, an on-page widget you can drag anywhere, and a full dashboard across every site.</p>
+      </div>
+      <div class="surfaces">
+        <div class="surf reveal">
+          <div class="surf-art">
+            <div class="popup">
+              <div class="popup-head"><span>your-crm.com</span><span class="all">⤢ all</span></div>
+              <div class="listhead">Follow up this week <span class="cnt">1/3</span></div>
+              <div class="witem"><span class="chk"></span><span class="wt">Renewal quote → Dana</span><span class="pin">📅</span></div>
+              <div class="witem"><span class="chk"></span><span class="wt">Re-engage cold lead</span></div>
+              <div class="witem done"><span class="chk done"></span><span class="wt">Book QBR</span></div>
+            </div>
+          </div>
+          <div class="surf-cap"><h3>Toolbar popup</h3><p>Click the icon for the current site's lists. Add, check off, and jump in.</p></div>
+        </div>
+        <div class="surf reveal">
+          <div class="surf-art">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:16px">
+              <div class="bubble-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7l2 2 3-3"/><path d="M4 13l2 2 3-3"/><path d="M4 19l2 2 3-3"/><path d="M13 7h7M13 14h7M13 20h7"/></svg></div>
+              <div class="popup" style="max-width:200px">
+                <div class="popup-head"><span>2 here</span><span class="all">—</span></div>
+                <div class="witem"><span class="chk"></span><span class="wt">Reply to Dana</span></div>
+                <div class="witem"><span class="chk"></span><span class="wt">Log the call</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="surf-cap"><h3>On-page widget</h3><p>A draggable bubble that sits on the page, dark-mode aware, out of your way.</p></div>
+        </div>
+        <div class="surf reveal">
+          <div class="surf-art">
+            <div class="appmock">
+              <div class="rail"><i class="on"></i><i></i><i></i><i style="margin-top:5px;background:#c9bfa6"></i><i></i><i></i></div>
+              <div class="main">
+                <div class="h"></div>
+                <div class="r"><span class="chk" style="width:11px;height:11px"></span><span class="b" style="width:80%"></span></div>
+                <div class="r"><span class="chk done" style="width:11px;height:11px"></span><span class="b" style="width:60%"></span></div>
+                <div class="r"><span class="chk" style="width:11px;height:11px"></span><span class="b"></span></div>
+                <div class="h" style="margin-top:5px"></div>
+                <div class="r"><span class="chk" style="width:11px;height:11px"></span><span class="b" style="width:70%"></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="surf-cap"><h3>Full dashboard</h3><p>Every domain in one tree — search, filter by tag, sort, and archive.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-domain="mail.<b>google</b>.com" data-badge="2">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">Built for real workdays</span>
+        <h2>Capture fast. Never lose the thread.</h2>
+      </div>
+      <div class="features">
+        <div class="feat reveal">
+          <svg class="fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7l11 11-7 7L3 10V3z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
+          <h3>Capture from anywhere</h3>
+          <p>Right-click selected text, a page, or a link to drop it straight into that site's Inbox. Keyboard shortcuts too.</p>
+        </div>
+        <div class="feat reveal">
+          <svg class="fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M12 1h4M5 4 3 6"/></svg>
+          <h3>Due dates &amp; reminders</h3>
+          <p>One-off or daily/weekly, with desktop notifications. Overdue turns red so an SLA or a callback never slips.</p>
+        </div>
+        <div class="feat reveal">
+          <svg class="fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7.2-7.2A2 2 0 0 1 2.8 12V4a1 1 0 0 1 1-1h8a2 2 0 0 1 1.4.6l7.2 7.2a2 2 0 0 1 .2 2.6z"/><circle cx="7.5" cy="7.5" r="1.3"/></svg>
+          <h3>Tags, sort &amp; archive</h3>
+          <p>Tag items, filter across every site at once, sort by due date, and archive without deleting.</p>
+        </div>
+        <div class="feat reveal">
+          <svg class="fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 9 9c-4 1-8-3-9-9z"/></svg>
+          <h3>Dark mode</h3>
+          <p>Follows your OS, or lock it to Light or Dark — across the popup, widget, and dashboard.</p>
+        </div>
+        <div class="feat reveal">
+          <svg class="fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0 4 4m-4-4-4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+          <h3>Export &amp; portable</h3>
+          <p>Back up to JSON or readable Markdown. Move between machines with Export → Import (merge).</p>
+        </div>
+        <div class="feat reveal">
+          <svg class="fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+          <h3>100% local</h3>
+          <p>Everything lives in your browser. No account, no backend, no cloud — your client notes never leave the machine.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="install" data-domain="amims71.<b>github</b>.io/web-notes" data-badge="✓">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">Install in about a minute</span>
+        <h2>No build, no sign-up. Load it and go.</h2>
+      </div>
+      <div class="install-grid">
+        <div class="steps reveal">
+          <div class="step"><span class="n"></span><span><b>Download</b> the latest <code>web-notes.zip</code> from Releases and unzip it.</span></div>
+          <div class="step"><span class="n"></span><span>Open <code>chrome://extensions</code> and turn on <b>Developer mode</b> (top-right).</span></div>
+          <div class="step"><span class="n"></span><span>Click <b>Load unpacked</b> and pick the unzipped folder.</span></div>
+          <div class="step"><span class="n"></span><span>Pin the icon, open any site, and start noting. That's it.</span></div>
+          <div class="cta-row" style="margin-top:26px">
+            <a class="btn btn-primary" href="https://github.com/amims71/web-notes/releases/latest">Download latest release</a>
+            <a class="btn btn-ghost" href="https://github.com/amims71/web-notes">GitHub repo</a>
+          </div>
+        </div>
+        <div class="codecard reveal">
+          <div class="cc-top"><span class="dots" style="margin-right:4px"><i style="width:9px;height:9px;background:#ff6f6f;border-radius:50%;display:block"></i></span> Terminal — or just use the UI above</div>
+          <pre><span class="cmt"># prefer the command line? clone &amp; load it:</span>
+git clone https://github.com/amims71/web-notes
+<span class="cmt"># then chrome://extensions → Load unpacked → the folder</span>
+
+<span class="cmt"># works on Chrome, Edge, Brave (Manifest V3)</span>
+npm test   <span class="ok"># 52 passing · zero dependencies</span></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div class="brand">
+        <span class="bubble-ico" style="width:32px;height:32px;border-radius:9px"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:19px;height:19px"><path d="M4 7l2 2 3-3"/><path d="M4 13l2 2 3-3"/><path d="M4 19l2 2 3-3"/><path d="M13 7h7M13 14h7M13 20h7"/></svg></span>
+        Web Notes
+      </div>
+      <div class="links">
+        <a href="https://github.com/amims71/web-notes">Source</a>
+        <a href="https://github.com/amims71/web-notes/releases/latest">Releases</a>
+        <a href="https://github.com/amims71/web-notes/blob/master/LICENSE">License</a>
+      </div>
+    </div>
+    <p class="fineprint">v1.1.1 · MIT · built locally, runs locally. Not affiliated with Google or Chrome.</p>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // Scroll reveals
+    const revs = document.querySelectorAll(".reveal");
+    if ("IntersectionObserver" in window) {
+      const ro = new IntersectionObserver((es) => {
+        es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); ro.unobserve(e.target); } });
+      }, { threshold: 0.14 });
+      revs.forEach((r) => ro.observe(r));
+    } else { revs.forEach((r) => r.classList.add("in")); }
+
+    // Address bar retargets to the section in view — proving the per-domain idea
+    const urlEl = document.getElementById("addr-url");
+    const badgeEl = document.getElementById("addr-badge");
+    const secs = [...document.querySelectorAll("section[data-domain]")];
+    if ("IntersectionObserver" in window && urlEl) {
+      const ao = new IntersectionObserver((es) => {
+        es.forEach((e) => {
+          if (e.isIntersecting) {
+            urlEl.innerHTML = e.target.dataset.domain;
+            badgeEl.textContent = e.target.dataset.badge;
+            urlEl.animate
+              ? urlEl.animate([{ opacity: .3 }, { opacity: 1 }], { duration: 260 })
+              : null;
+          }
+        });
+      }, { threshold: 0.5 });
+      secs.forEach((s) => ao.observe(s));
+    }
+
+    // One delight: the hero note is draggable, echoing the real widget
+    document.querySelectorAll(".note.drag").forEach((note) => {
+      if (reduce) return;
+      let sx, sy, ox = 0, oy = 0, drag = false;
+      note.addEventListener("pointerdown", (e) => {
+        drag = true; sx = e.clientX; sy = e.clientY;
+        note.style.transition = "none"; note.setPointerCapture(e.pointerId);
+      });
+      note.addEventListener("pointermove", (e) => {
+        if (!drag) return;
+        note.style.transform = "rotate(-5deg) translate(" + (ox + e.clientX - sx) + "px," + (oy + e.clientY - sy) + "px)";
+      });
+      note.addEventListener("pointerup", (e) => {
+        drag = false; ox += e.clientX - sx; oy += e.clientY - sy;
+      });
+    });
+  })();
+</script>
+
+</body>
+</html>
