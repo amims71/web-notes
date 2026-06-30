@@ -247,7 +247,15 @@ function renderItem(key, list, item) {
     input.focus();
   };
 
-  const row = el("div", { className: "item" + (item.done ? " done" : ""), draggable: state.sort === "manual" }, [cb, t]);
+  const panel = detailsPanel(key, item);
+  const toggle = el("button", { className: "btn", textContent: expanded.has(item.id) ? "▾" : "▸", title: "Details" });
+  toggle.onclick = () => {
+    const open = !expanded.has(item.id);
+    open ? expanded.add(item.id) : expanded.delete(item.id);
+    panel.hidden = !open;
+    toggle.textContent = open ? "▾" : "▸";
+  };
+  const row = el("div", { className: "item" + (item.done ? " done" : ""), draggable: state.sort === "manual" }, [cb, toggle, t]);
   if (item.pageUrl) row.append(el("span", { className: "pin", textContent: "★ " + item.pageUrl }));
   if (isHttpUrl(item.url)) row.append(el("a", { href: item.url, target: "_blank", textContent: "🔗" }));
   if (item.note) row.append(el("span", { className: "has-note", textContent: "📝", title: "Has notes" }));
@@ -257,16 +265,6 @@ function renderItem(key, list, item) {
     row.append(flag);
   }
   for (const tag of item.tags ?? []) row.append(el("span", { className: "tag-chip ro", textContent: "#" + tag }));
-
-  const panel = detailsPanel(key, item);
-  const toggle = el("button", { className: "btn", textContent: expanded.has(item.id) ? "▾" : "▸", title: "Details" });
-  toggle.onclick = () => {
-    const open = !expanded.has(item.id);
-    open ? expanded.add(item.id) : expanded.delete(item.id);
-    panel.hidden = !open;
-    toggle.textContent = open ? "▾" : "▸";
-  };
-  row.append(toggle);
 
   const del = el("button", { className: "btn", textContent: "✕" });
   del.onclick = async () => {

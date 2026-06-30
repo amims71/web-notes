@@ -132,7 +132,7 @@
       if (e.key !== "Enter" || !add.value.trim()) return;
       let list = bucket.lists[0];
       if (!list) { list = { id: crypto.randomUUID(), name: "Notes", collapsed: false, order: 0, items: [] }; bucket.lists.push(list); }
-      list.items.push(makeItem({ text: add.value.trim(), order: nextOrder(list.items) }));
+      list.items.push(makeItem({ text: add.value.trim(), url: scope.pageUrl, order: nextOrder(list.items) }));
       await save();
     };
     panel.append(add);

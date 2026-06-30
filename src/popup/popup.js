@@ -148,16 +148,6 @@ function itemRow(list, item) {
   text.title = "Double-click to edit";
   text.ondblclick = () => editItem(text, item);
 
-  const row = el("div", { className: "item" + (item.done ? " done" : "") }, [cb, text]);
-  if (isHttpUrl(item.url)) row.append(el("a", { href: item.url, target: "_blank", textContent: "🔗", title: item.url }));
-  if (item.note) row.append(el("span", { className: "has-note", textContent: "📝", title: "Has notes" }));
-  if (item.due != null) {
-    const flag = el("span", { className: "due-flag" + (dueState(item, Date.now()) === "overdue" ? " overdue" : ""), textContent: "📅 " + formatDue(item.due, Date.now()) });
-    flag.title = new Date(item.due).toLocaleString();
-    row.append(flag);
-  }
-  for (const tag of item.tags ?? []) row.append(el("span", { className: "tag-chip ro", textContent: "#" + tag }));
-
   const panel = detailsPanel(item);
   const toggle = el("button", { className: "disclosure", textContent: expanded.has(item.id) ? "▾" : "▸", title: "Details" });
   toggle.onclick = () => {
@@ -166,7 +156,15 @@ function itemRow(list, item) {
     panel.hidden = !open;
     toggle.textContent = open ? "▾" : "▸";
   };
-  row.append(toggle);
+  const row = el("div", { className: "item" + (item.done ? " done" : "") }, [cb, toggle, text]);
+  if (isHttpUrl(item.url)) row.append(el("a", { href: item.url, target: "_blank", textContent: "🔗", title: item.url }));
+  if (item.note) row.append(el("span", { className: "has-note", textContent: "📝", title: "Has notes" }));
+  if (item.due != null) {
+    const flag = el("span", { className: "due-flag" + (dueState(item, Date.now()) === "overdue" ? " overdue" : ""), textContent: "📅 " + formatDue(item.due, Date.now()) });
+    flag.title = new Date(item.due).toLocaleString();
+    row.append(flag);
+  }
+  for (const tag of item.tags ?? []) row.append(el("span", { className: "tag-chip ro", textContent: "#" + tag }));
 
   const del = el("button", { className: "del", textContent: "✕", title: "Delete" });
   del.onclick = async () => {
@@ -208,7 +206,7 @@ function addRow(list) {
   const row = el("div", { className: "add-row" }, [input, label]);
   input.onkeydown = async (e) => {
     if (e.key !== "Enter" || !input.value.trim()) return;
-    list.items.push(makeItem({ text: input.value.trim(), order: nextOrder(list.items), pageUrl: pin.checked ? scope.pageUrl : null }));
+    list.items.push(makeItem({ text: input.value.trim(), url: scope.pageUrl, order: nextOrder(list.items), pageUrl: pin.checked ? scope.pageUrl : null }));
     await save();
   };
   return row;
@@ -271,7 +269,7 @@ $("quick-add").onkeydown = async (e) => {
   if (scope?.kind !== "web" || !bucket || !text) { window.close(); return; }
   let list = [...bucket.lists].sort((a, b) => a.order - b.order)[0];
   if (!list) { list = makeList("Notes"); list.order = nextOrder(bucket.lists); bucket.lists.push(list); }
-  list.items.push(makeItem({ text, order: nextOrder(list.items) }));
+  list.items.push(makeItem({ text, url: scope.pageUrl, order: nextOrder(list.items) }));
   await save();
   window.close();
 };
