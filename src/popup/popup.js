@@ -30,6 +30,9 @@ async function load() {
   }
   $("domain").textContent = scope.domain;
   bucket = (await getDomain(scope.key)) ?? makeDomainBucket(scope.domain);
+  // Defend against a corrupted/legacy stored bucket: a missing lists array would
+  // otherwise throw in render() and leave the popup blank (looks like it "didn't open").
+  if (!Array.isArray(bucket.lists)) bucket = { ...makeDomainBucket(scope.domain), ...bucket, lists: [] };
   render();
   const q = $("quick-add");
   q.hidden = false;
@@ -298,11 +301,14 @@ $("theme").onchange = async (e) => {
 
 $("see-all").onclick = () => chrome.tabs.create({ url: chrome.runtime.getURL("src/app/app.html") });
 
-subscribe(async () => {
-  if (scope?.kind === "web") {
-    bucket = (await getDomain(scope.key)) ?? makeDomainBucket(scope.domain);
-    render();
-  }
+subscribe(async (changes) => {
+  if (scope?.kind !== "web") return;
+  // Ignore writes that don't touch this domain (e.g. the due-check alarm's
+  // per-minute meta write), so an inline edit or the quick-add field isn't
+  // rebuilt out from under the user.
+  if (changes && !(scope.key in changes)) return;
+  bucket = (await getDomain(scope.key)) ?? makeDomainBucket(scope.domain);
+  render();
 });
 
 load();

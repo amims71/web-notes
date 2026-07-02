@@ -99,9 +99,16 @@ async function runDueSweep() {
   }
   const domains = await getAllDomains();
   for (const [key, bucket] of Object.entries(domains)) {
-    const { due, bucket: next } = sweepDue(bucket, lastCheck, now);
-    await Promise.all(due.map((item) => notifyDue(item, bucket.domain)));
-    if (next !== bucket) await setDomain(key, next);
+    // Never let one malformed bucket abort the whole sweep (which would drop
+    // every reminder and log an uncaught error on each 1-minute tick).
+    if (!bucket || !Array.isArray(bucket.lists)) continue;
+    try {
+      const { due, bucket: next } = sweepDue(bucket, lastCheck, now);
+      await Promise.all(due.map((item) => notifyDue(item, bucket.domain)));
+      if (next !== bucket) await setDomain(key, next);
+    } catch (e) {
+      console.warn("web-notes: skipping bucket", key, e);
+    }
   }
   meta.settings.lastDueCheck = now;
   await setMeta(meta);

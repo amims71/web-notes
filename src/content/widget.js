@@ -17,9 +17,19 @@
   container.className = "host";
   root.append(container);
 
+  // Keep keystrokes inside the widget. Host apps like Slack, Gmail and Linear
+  // listen for key events at the document level and, because our fields live in
+  // a shadow root, see the event as coming from a plain element and steal focus
+  // to their own composer / trigger a shortcut. Stopping propagation once the
+  // event has bubbled to our container lets our own handlers run first while
+  // preventing the page from ever seeing it.
+  for (const type of ["keydown", "keyup", "keypress", "input", "beforeinput"])
+    container.addEventListener(type, (e) => e.stopPropagation());
+
   let corner = { right: "16px", bottom: "16px" };
   let expanded = false;
   let bucket = null;
+  let currentTheme;
 
   function formatDue(ms, now) {
     const diff = ms - now, abs = Math.abs(diff), m = 60000, h = 3600000, d = 86400000;
@@ -47,6 +57,15 @@
   async function save() { await setDomain(scope.key, bucket); }
 
   function render() {
+    // Preserve the quick-add field's focus, text and caret across a rebuild so
+    // a background storage change (e.g. another tab, the due-check alarm) can't
+    // yank the cursor out from under the user while they're typing.
+    const focused = root.activeElement;
+    const keepAdd = focused && focused.classList && focused.classList.contains("add");
+    const addValue = keepAdd ? focused.value : null;
+    const addStart = keepAdd ? focused.selectionStart : null;
+    const addEnd = keepAdd ? focused.selectionEnd : null;
+
     container.innerHTML = "";
     if (!bucket || bucket.widgetEnabled === false) { document.documentElement.contains(host) && host.remove(); return; }
     const count = countOpenItems(bucket, { pageUrl: scope.pageUrl });
@@ -130,12 +149,20 @@
     add.placeholder = "+ quick add to first list…";
     add.onkeydown = async (e) => {
       if (e.key !== "Enter" || !add.value.trim()) return;
+      const text = add.value.trim();
+      add.value = "";
       let list = bucket.lists[0];
       if (!list) { list = { id: crypto.randomUUID(), name: "Notes", collapsed: false, order: 0, items: [] }; bucket.lists.push(list); }
-      list.items.push(makeItem({ text: add.value.trim(), url: scope.pageUrl, order: nextOrder(list.items) }));
+      list.items.push(makeItem({ text, url: scope.pageUrl, order: nextOrder(list.items) }));
       await save();
     };
     panel.append(add);
+
+    if (keepAdd) {
+      add.value = addValue;
+      add.focus();
+      try { add.setSelectionRange(addStart, addEnd); } catch {}
+    }
 
     const more = document.createElement("a");
     more.className = "more";
@@ -179,15 +206,31 @@
     });
   }
 
-  async function reload() {
-    bucket = await getDomain(scope.key);
-    const m = await getMeta();
-    applyTheme(m.settings?.theme);
-    render();
+  async function reload(changes) {
+    // `changes` is the chrome.storage change set (undefined on the first call).
+    // Only react to writes that actually affect this widget: this domain's data
+    // or the meta blob. The due-check alarm rewrites meta.lastDueCheck every
+    // minute, so we further guard meta-driven re-renders on theme/corner.
+    const domainChanged = !changes || scope.key in changes;
+    const metaChanged = !changes || "meta" in changes;
+    if (!domainChanged && !metaChanged) return;
+
+    if (domainChanged || bucket === null) bucket = await getDomain(scope.key);
+
+    let needRender = domainChanged;
+    if (metaChanged) {
+      const m = await getMeta();
+      const t = m.settings?.theme;
+      if (t !== currentTheme) { currentTheme = t; applyTheme(t); needRender = true; }
+      const c = m.settings?.widgetCorner;
+      if (c && (c.right !== corner.right || c.bottom !== corner.bottom)) { corner = c; placement(); }
+    }
+    if (needRender) render();
   }
   const savedMeta = await getMeta();
   if (savedMeta.settings?.widgetCorner) corner = savedMeta.settings.widgetCorner;
-  applyTheme(savedMeta.settings?.theme);
+  currentTheme = savedMeta.settings?.theme;
+  applyTheme(currentTheme);
   subscribe(reload);
   await reload();
 })();
